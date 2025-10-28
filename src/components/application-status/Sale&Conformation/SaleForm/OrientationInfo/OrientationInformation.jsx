@@ -1,5 +1,5 @@
 import { Formik, Form } from "formik";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formFields, initialValues } from "./constants/orientationConstants";
 import { validationSchema } from "./constants/validationSchema";
 import { useOrientationSubmission } from "./hooks/useOrientationSubmission";
@@ -7,11 +7,34 @@ import OrientationFormTitle from "./components/OrientationFormTitle";
 import OrientationFormGrid from "./components/OrientationFormGrid";
 import styles from "./OrientationInformation.module.css";
 
-const OrientationInformation = ({ onSuccess }) => {
+const OrientationInformation = ({ onSuccess, externalErrors = {}, onClearFieldError, onValidationRef, allFormData, academicYear, academicYearId }) => {
   const { isSubmitting, error, handleSubmit } = useOrientationSubmission();
 
   // Track previous values to detect changes
   const [previousValues, setPreviousValues] = useState(initialValues);
+
+  // Enhanced initial values with data from props and localStorage
+  const getEnhancedInitialValues = () => {
+    const academicYearFromStorage = localStorage.getItem('academicYear');
+    const academicYearIdFromStorage = localStorage.getItem('academicYearId');
+    
+    // Priority: Props > localStorage > initialValues
+    return {
+      ...initialValues,
+      academicYear: academicYear || academicYearFromStorage || initialValues.academicYear,
+      academicYearId: academicYearId || academicYearIdFromStorage || null
+    };
+  };
+
+  const [enhancedInitialValues] = useState(getEnhancedInitialValues());
+
+  // Update academicYear when props change
+  useEffect(() => {
+    if (academicYear && academicYear !== enhancedInitialValues.academicYear) {
+      console.log('📅 Academic Year updated from StatusHeader:', academicYear);
+      // The form will automatically update when the component re-renders with new props
+    }
+  }, [academicYear, academicYearId]);
 
   // Custom validation function for conditional fields
   const customValidate = (values) => {
@@ -33,16 +56,6 @@ const OrientationInformation = ({ onSuccess }) => {
     // Check if values have actually changed
     const hasChanged = JSON.stringify(values) !== JSON.stringify(previousValues);
     if (hasChanged && onSuccess) {
-      console.log('🔄 OrientationInformation values changed:', values);
-      console.log('🔄 Key fields:', {
-        academicYear: values.academicYear,
-        branch: values.branch,
-        branchType: values.branchType,
-        city: values.city,
-        studentType: values.studentType,
-        joiningClass: values.joiningClass,
-        orientationName: values.orientationName
-      });
       onSuccess(values);
       setPreviousValues(values);
     }
@@ -50,11 +63,9 @@ const OrientationInformation = ({ onSuccess }) => {
 
   // Handle form submission with API integration
   const onSubmit = async (values, { setSubmitting }) => {
-    console.log('🔄 OrientationInformation onSubmit called with values:', values);
     
     try {
       // Just validate and pass data to parent (matching existing pattern)
-      console.log('🔄 OrientationInformation calling onSuccess with:', values);
       if (onSuccess) {
         onSuccess(values);
       }
@@ -62,19 +73,55 @@ const OrientationInformation = ({ onSuccess }) => {
       setSubmitting(false);
       return { success: true };
     } catch (err) {
-      console.error('Orientation information validation error:', err);
       setSubmitting(false);
       return { success: false, error: err.message };
     }
   };
 
+  // Function to validate orientation form and return errors
+  const validateOrientationForm = async () => {
+    // Get current form values from the form data
+    const currentValues = {
+      academicYear: allFormData.academicYear || enhancedInitialValues.academicYear,
+      branch: allFormData.branch || enhancedInitialValues.branch,
+      branchType: allFormData.branchType || enhancedInitialValues.branchType,
+      city: allFormData.city || enhancedInitialValues.city,
+      studentType: allFormData.studentType || enhancedInitialValues.studentType,
+      joiningClass: allFormData.joiningClass || enhancedInitialValues.joiningClass,
+      orientationName: allFormData.orientationName || enhancedInitialValues.orientationName,
+      admissionType: allFormData.admissionType || enhancedInitialValues.admissionType,
+      proReceiptNo: allFormData.proReceiptNo || enhancedInitialValues.proReceiptNo
+    };
+    
+    try {
+      // Validate using the same schema as Formik
+      await validationSchema.validate(currentValues, { abortEarly: false });
+      return {}; // No errors
+    } catch (error) {
+      const errors = {};
+      if (error.inner) {
+        error.inner.forEach(err => {
+          errors[err.path] = err.message;
+        });
+      }
+      return errors;
+    }
+  };
+
+  // Pass validation function to parent
+  useEffect(() => {
+    if (onValidationRef) {
+      onValidationRef(validateOrientationForm);
+    }
+  }, [onValidationRef]);
+
   return (
     <Formik
-      initialValues={initialValues}
+      initialValues={enhancedInitialValues}
       validationSchema={validationSchema}
       validate={customValidate}
       validateOnBlur={true}
-      validateOnChange={true}
+      validateOnChange={false}
       onSubmit={onSubmit}
     >
       {({ values, errors, touched, handleChange, handleBlur, setFieldValue }) => {
@@ -103,6 +150,8 @@ const OrientationInformation = ({ onSuccess }) => {
             touched={touched}
             setFieldValue={setFieldValue}
             isSubmitting={isSubmitting}
+            externalErrors={externalErrors}
+            onClearFieldError={onClearFieldError}
           />
         </Form>
         );

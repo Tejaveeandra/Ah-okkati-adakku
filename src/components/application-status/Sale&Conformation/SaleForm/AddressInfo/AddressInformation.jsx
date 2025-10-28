@@ -7,7 +7,10 @@ import AddressFormTitle from "./components/AddressFormTitle";
 import AddressFormGrid from "./components/AddressFormGrid";
 import styles from "./AddressInformation.module.css";
 
-const AddressInformation = ({ onSuccess }) => {
+const AddressInformation = ({ onSuccess, externalErrors = {}, onClearFieldError }) => {
+  // Debug logging for external errors
+  console.log('🔍 AddressInformation received externalErrors:', externalErrors);
+  
   const { isSubmitting, error, handleSubmit } = useAddressSubmission();
 
   // Track previous values to detect changes
@@ -60,7 +63,7 @@ const AddressInformation = ({ onSuccess }) => {
       initialValues={initialValues}
       validationSchema={validationSchema}
       validateOnBlur={true}
-      validateOnChange={true}
+      validateOnChange={false}
       onSubmit={onSubmit}
     >
       {({ values, errors, touched, handleChange, handleBlur, setFieldValue }) => {
@@ -88,6 +91,8 @@ const AddressInformation = ({ onSuccess }) => {
             errors={errors}
             touched={touched}
             setFieldValue={setFieldValue}
+            externalErrors={externalErrors}
+            onClearFieldError={onClearFieldError}
           />
         </Form>
         );

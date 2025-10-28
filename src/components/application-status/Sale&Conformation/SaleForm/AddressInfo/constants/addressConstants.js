@@ -46,7 +46,7 @@ export const formFields = [
     label: "State",
     placeholder: "Select State",
     type: "dropdown",
-    required: true,
+    required: false,
     options: "stateOptions"
   },
   {
@@ -55,7 +55,7 @@ export const formFields = [
     label: "District",
     placeholder: "Select District",
     type: "dropdown",
-    required: true,
+    required: false,
     options: "districtOptions"
   },
   {

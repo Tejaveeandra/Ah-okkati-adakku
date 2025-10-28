@@ -14,11 +14,26 @@ import AcademicInformation from '../ConformationForms/AcademicInformation/Academ
 import ConcessionInformation from '../ConformationForms/ConcessionInformation/ConcessionInformation';
 
 import styles from './SaleForm.module.css';
+import { validateAllForms, getMissingFieldsMessage } from './utils/comprehensiveValidation';
 
 const SaleForm = ({ onBack, initialData = {} }) => {
   const { status, applicationNo } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Helper function to get empId from localStorage
+  const getEmpId = () => {
+    try {
+      const loginData = localStorage.getItem('loginData');
+      if (loginData) {
+        const parsed = JSON.parse(loginData);
+        return parsed.empId || 0;
+      }
+    } catch (error) {
+      // Error parsing login data
+    }
+    return 0; // Fallback to 0 if not found
+  };
   const [showSuccess, setShowSuccess] = useState(false);
   const [showConform, setShowConform] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -27,19 +42,8 @@ const SaleForm = ({ onBack, initialData = {} }) => {
   // Determine category from localStorage, navigation state, or initialData
   const category = localStorage.getItem("category") || (location.state && location.state.category) || initialData.category || "COLLEGE";
   
-  // Debug logging for category
-  console.log('🏫 Category Debug:', {
-    localStorageCategory: localStorage.getItem("category"),
-    navigationStateCategory: location.state?.category,
-    initialDataCategory: initialData.category,
-    finalCategory: category,
-    initialData: initialData,
-    locationState: location.state
-  });
-  
   // Callback to receive profile data from StudentProfile
   const handleProfileDataReceived = (profileData) => {
-    console.log('📊 Profile data received in SaleForm:', profileData);
     setStudentProfileData(profileData);
   };
   
@@ -48,16 +52,14 @@ const SaleForm = ({ onBack, initialData = {} }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [fieldWiseErrors, setFieldWiseErrors] = useState({});
 
   const handlePaymentSuccess = (success) => {
     // Don't show success page here - wait for backend submission
-    console.log('Payment success callback received:', success);
   };
 
   const handleSaleAndConform = () => {
     // Navigate to confirmation route instead of showing confirmation form
-    console.log('🔄 Sale & Conform clicked - navigating to confirmation route');
-    console.log('📍 Current applicationNo:', applicationNo);
     
     // Navigate to confirmation route with the same application number
     if (applicationNo) {
@@ -69,31 +71,52 @@ const SaleForm = ({ onBack, initialData = {} }) => {
         }
       });
     } else {
-      console.error('❌ No application number available for navigation');
+      // No application number available for navigation
     }
   };
 
   const handleNextStep = () => {
-    console.log('Next step clicked, current step:', currentStep);
-    
     if (currentStep === 1) {
       // Go to FamilyInformation step
-      console.log('Moving to step 2 - FamilyInformation');
       setCurrentStep(2);
     } else if (currentStep === 2) {
       // Go to success page
-      console.log('Moving to success page');
       setShowSuccess(true);
     }
   };
 
   const handleBackStep = () => {
-    console.log('Back step clicked');
-    
     if (currentStep === 2) {
       // Go back to StudentProfile step
       setCurrentStep(1);
     }
+  };
+
+  // Function to handle field-wise errors from validation
+  const handleFieldWiseErrors = (errors) => {
+    setFieldWiseErrors(errors);
+  };
+
+  // Function to clear field-wise errors
+  const clearFieldWiseErrors = () => {
+    setFieldWiseErrors({});
+  };
+
+  // Function to clear specific field error
+  const clearSpecificFieldError = (fieldName) => {
+    setFieldWiseErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[fieldName];
+      return newErrors;
+    });
+  };
+
+  // State for orientation validation function
+  const [orientationValidationFn, setOrientationValidationFn] = useState(null);
+
+  // Function to handle orientation validation reference
+  const handleOrientationValidationRef = (validationFn) => {
+    setOrientationValidationFn(() => validationFn);
   };
 
   // Function to add form data to single object
@@ -115,33 +138,6 @@ const SaleForm = ({ onBack, initialData = {} }) => {
     try {
       // Use provided form data or fall back to state
       const dataToUse = formDataToUse || allFormData;
-      
-      console.log('🚀 === FINISH SALE CLICKED - PREPARING BACKEND DATA === 🚀');
-      console.log('📊 Raw Form Data (Single Object):', dataToUse);
-      console.log('📋 Form Data Keys:', Object.keys(dataToUse));
-      console.log('📋 Form Data Values:', Object.values(dataToUse));
-      console.log('📊 Total Fields Collected:', Object.keys(dataToUse).length);
-      console.log('🔢 Application Number from URL:', applicationNo);
-      
-      // Debug specific fields that should be IDs
-      console.log('🔍 ID Field Debug:', {
-        gender: dataToUse.gender,
-        quota: dataToUse.quota,
-        admissionType: dataToUse.admissionType,
-        academicYear: dataToUse.academicYear,
-        branch: dataToUse.branch,
-        branchType: dataToUse.branchType,
-        city: dataToUse.city,
-        studentType: dataToUse.studentType,
-        joiningClass: dataToUse.joiningClass,
-        orientationName: dataToUse.orientationName,
-        state: dataToUse.state,
-        district: dataToUse.district,
-        mandal: dataToUse.mandal,
-        paymentMode: dataToUse.paymentMode,
-        amount: dataToUse.amount,
-        paymentDate: dataToUse.paymentDate
-      });
       
       // Transform data for backend API structure
       const backendData = {
@@ -190,13 +186,13 @@ const SaleForm = ({ onBack, initialData = {} }) => {
           districtId: parseInt(dataToUse.districtId) || 0,
           pincode: parseInt(dataToUse.pincode) || 0,
           stateId: parseInt(dataToUse.stateId) || 0,
-          createdBy: 0 // You may need to get this from user context
+          createdBy: getEmpId() // Get empId from login data
         },
         
         // Additional fields
         studAdmsNo: parseInt(applicationNo) || 0, // Use application number as admission number
         proId: parseInt(dataToUse.proId) || 1, // Use actual PRO ID, default to 1
-        createdBy: 0, // You may need to get this from user context
+                createdBy: getEmpId(), // You may need to get this from user context
         
         // Payment Information (nested object) - Use actual payment data
         paymentDetails: {
@@ -205,19 +201,10 @@ const SaleForm = ({ onBack, initialData = {} }) => {
           amount: parseFloat(dataToUse.amount) || 0.1,
           prePrintedReceiptNo: dataToUse.receiptNumber || "",
           remarks: dataToUse.remarks || "",
-          createdBy: 0 // You may need to get this from user context
+          createdBy: getEmpId() // Get empId from login data
         }
       };
       
-      console.log('🔄 === BACKEND DATA OBJECT READY === 🔄');
-      console.log('📤 Backend Data Object:', backendData);
-      console.log('📋 Backend Data Keys:', Object.keys(backendData));
-      console.log('📋 Backend Data Values:', Object.values(backendData));
-      console.log('📊 Backend Fields Count:', Object.keys(backendData).length);
-      console.log('🔢 ID Fields:', Object.entries(backendData).filter(([key, value]) => key.includes('Id')).map(([key, value]) => `${key}: ${value}`));
-      console.log('💰 Amount Field:', `amount: ${backendData.amount}`);
-      console.log('📅 Date Fields:', `paymentDate: ${backendData.paymentDate}, dateOfBirth: ${backendData.dateOfBirth}`);
-      console.log('🎯 === BACKEND DATA OBJECT COMPLETE === 🎯');
       
       // Direct backend API call
       const response = await fetch('http://localhost:8080/api/student-admissions-sale/create', {
@@ -235,27 +222,22 @@ const SaleForm = ({ onBack, initialData = {} }) => {
       
       // Check if response is JSON
       const contentType = response.headers.get('content-type');
-      console.log('📋 Response Content-Type:', contentType);
       
       let result;
       if (contentType && contentType.includes('application/json')) {
         result = await response.json();
-        console.log('✅ Backend Response (JSON):', result);
       } else {
         // If not JSON, get as text but still treat as success if HTTP status is OK
         const textResponse = await response.text();
-        console.log('✅ Backend Response (Text):', textResponse);
         result = { message: 'Data saved successfully', textResponse: textResponse };
       }
       
       // Show success page after successful database submission (HTTP 200)
-      console.log('🎉 Database submission successful - showing success page');
       setSuccess(true);
       setShowSuccess(true); // Show success page only after backend success
       return { success: true, data: result };
       
     } catch (err) {
-      console.error('Sale submission error:', err);
       setError(err.message || 'Sale submission failed. Please try again.');
       return { success: false, error: err.message };
     } finally {
@@ -270,17 +252,11 @@ const SaleForm = ({ onBack, initialData = {} }) => {
     setSuccess(false);
 
     try {
-      console.log('🚀 === FINISH SALE & CONFIRMATION CLICKED - PREPARING CONFIRMATION DATA === 🚀');
-      console.log('📊 All Form Data:', allFormData);
-      console.log('📊 All Form Data Keys:', Object.keys(allFormData));
-      console.log('📊 All Form Data (JSON):', JSON.stringify(allFormData, null, 2));
-      console.log('📊 Student Profile Data:', studentProfileData);
-      console.log('📊 Application Number:', applicationNo);
       
       // Transform data to match exact Swagger API format
       const confirmationData = {
         studAdmsNo: parseInt(applicationNo) || 0,
-        createdBy: 0, // You may need to get this from user context
+        createdBy: getEmpId(), // You may need to get this from user context
         appConfDate: new Date().toISOString(),
         
         // Academic Information Fields
@@ -306,7 +282,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
             occupation: allFormData.fatherOccupation || "string",
             mobileNo: parseInt(allFormData.fatherPhoneNumber) || 0,
             email: allFormData.fatherEmail || "string",
-            createdBy: 0
+            createdBy: getEmpId()
           },
           // Mother
           {
@@ -315,7 +291,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
             occupation: allFormData.motherOccupation || "string",
             mobileNo: parseInt(allFormData.motherPhoneNumber) || 0,
             email: allFormData.motherEmail || "string",
-            createdBy: 0
+            createdBy: getEmpId()
           }
         ].filter(parent => parent.name !== "string"), // Remove empty parents
         
@@ -326,7 +302,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
           classId: parseInt(sibling.classId) || 0,
           relationTypeId: parseInt(sibling.relationTypeId) || 0,
           genderId: parseInt(sibling.genderId) || 0,
-          createdBy: 0
+          createdBy: getEmpId()
         })) : [],
         
         // Concessions Array - Transform concession information
@@ -343,7 +319,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
                 authorizedById: parseInt(allFormData.authorizedById) || 0,
                 reasonId: parseInt(allFormData.reasonId) || 0,
                 comments: allFormData.description || "string",
-                createdBy: 0
+                createdBy: getEmpId()
               });
             }
             if (allFormData.tuitionFee) {
@@ -354,7 +330,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
                 authorizedById: parseInt(allFormData.authorizedById) || 0,
                 reasonId: parseInt(allFormData.reasonId) || 0,
                 comments: allFormData.description || "string",
-                createdBy: 0
+                createdBy: getEmpId()
               });
             }
           } else if (category === 'DEGREE') {
@@ -366,7 +342,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
                 authorizedById: parseInt(allFormData.authorizedById) || 0,
                 reasonId: parseInt(allFormData.reasonId) || 0,
                 comments: allFormData.description || "string",
-                createdBy: 0
+                createdBy: getEmpId()
               });
             }
             if (allFormData.yearConcession2nd) {
@@ -377,7 +353,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
                 authorizedById: parseInt(allFormData.authorizedById) || 0,
                 reasonId: parseInt(allFormData.reasonId) || 0,
                 comments: allFormData.description || "string",
-                createdBy: 0
+                createdBy: getEmpId()
               });
             }
             if (allFormData.yearConcession3rd) {
@@ -388,7 +364,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
                 authorizedById: parseInt(allFormData.authorizedById) || 0,
                 reasonId: parseInt(allFormData.reasonId) || 0,
                 comments: allFormData.description || "string",
-                createdBy: 0
+                createdBy: getEmpId()
               });
             }
           } else { // COLLEGE
@@ -400,7 +376,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
                 authorizedById: parseInt(allFormData.authorizedById) || 0,
                 reasonId: parseInt(allFormData.reasonId) || 0,
                 comments: allFormData.description || "string",
-                createdBy: 0
+                createdBy: getEmpId()
               });
             }
             if (allFormData.yearConcession2nd) {
@@ -411,7 +387,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
                 authorizedById: parseInt(allFormData.authorizedById) || 0,
                 reasonId: parseInt(allFormData.reasonId) || 0,
                 comments: allFormData.description || "string",
-                createdBy: 0
+                createdBy: getEmpId()
               });
             }
           }
@@ -426,16 +402,10 @@ const SaleForm = ({ onBack, initialData = {} }) => {
           amount: parseFloat(allFormData.amount) || 0.1,
           prePrintedReceiptNo: allFormData.receiptNumber || allFormData.prePrintedReceiptNo || "string",
           remarks: allFormData.remarks || "string",
-          createdBy: 0
+          createdBy: getEmpId()
         }
       };
       
-      console.log('🔄 === CONFIRMATION DATA OBJECT READY === 🔄');
-      console.log('📤 Confirmation Data Object:', confirmationData);
-      console.log('📋 Confirmation Data Keys:', Object.keys(confirmationData));
-      console.log('📊 Confirmation Fields Count:', Object.keys(confirmationData).length);
-      console.log('🎯 === CONFIRMATION DATA OBJECT COMPLETE === 🎯');
-      console.log('📦 FINAL BACKEND PAYLOAD (JSON):', JSON.stringify(confirmationData, null, 2));
       
       // Prepare request details
       const requestUrl = 'http://localhost:8080/api/application-confirmation/confirm';
@@ -445,13 +415,6 @@ const SaleForm = ({ onBack, initialData = {} }) => {
       };
       const requestBody = JSON.stringify(confirmationData);
       
-      console.log('📤 === BEFORE SENDING TO BACKEND === 📤');
-      console.log('📤 Request URL:', requestUrl);
-      console.log('📤 Request Method:', 'POST');
-      console.log('📤 Request Headers:', requestHeaders);
-      console.log('📤 Request Body Length:', requestBody.length, 'characters');
-      console.log('📤 Request Body (Raw):', requestBody);
-      console.log('📤 Request Body (Parsed):', JSON.parse(requestBody));
       
       // Call the confirmation API endpoint
       const response = await fetch(requestUrl, {
@@ -460,12 +423,6 @@ const SaleForm = ({ onBack, initialData = {} }) => {
         body: requestBody
       });
       
-      console.log('📥 === AFTER SENDING TO BACKEND === 📥');
-      console.log('📥 Response Status:', response.status);
-      console.log('📥 Response Status Text:', response.statusText);
-      console.log('📥 Response OK:', response.ok);
-      console.log('📥 Response Headers:', Object.fromEntries(response.headers.entries()));
-      console.log('📥 Response URL:', response.url);
       
       if (!response.ok) {
         // Even if response is not OK, try to get error details
@@ -473,22 +430,18 @@ const SaleForm = ({ onBack, initialData = {} }) => {
         let savedButError = false;
         try {
           const errorData = await response.json();
-          console.error('❌ API Error Response:', errorData);
           errorMessage = errorData.error || errorData.message || errorMessage;
           
           // Check if this is a serialization error (data was saved but response failed)
           if (errorData.message && errorData.message.includes('ByteBuddyInterceptor')) {
-            console.log('⚠️ Hibernate lazy-loading serialization error detected - data was likely saved');
             savedButError = true;
           }
         } catch (e) {
           // If can't parse error, just use status
-          console.error('❌ Could not parse error response');
         }
         
         // If data was saved but response failed, treat as success
         if (savedButError) {
-          console.log('✅ Data was saved successfully despite serialization error - treating as success');
           setSuccess(true);
           setShowSuccess(true);
           return { success: true, message: 'Data saved successfully' };
@@ -499,22 +452,14 @@ const SaleForm = ({ onBack, initialData = {} }) => {
       
       // Check if response is JSON
       const contentType = response.headers.get('content-type');
-      console.log('📋 Response Content-Type:', contentType);
       
       let result;
       if (contentType && contentType.includes('application/json')) {
         try {
           result = await response.json();
-          console.log('✅ === BACKEND API RESPONSE === ✅');
-          console.log('✅ Response Data:', result);
-          console.log('✅ Response Data (JSON):', JSON.stringify(result, null, 2));
-          console.log('✅ Response Data Type:', typeof result);
-          console.log('✅ Response Data Keys:', result ? Object.keys(result) : 'No keys');
         } catch (jsonError) {
-          console.error('❌ Failed to parse JSON response:', jsonError);
           // If data was saved but response can't be serialized, treat as success
           if (response.status === 200) {
-            console.log('⚠️ Response is 200 but JSON parse failed - treating as success');
             result = { success: true, message: 'Data saved successfully but response could not be serialized' };
           } else {
             throw jsonError;
@@ -523,20 +468,15 @@ const SaleForm = ({ onBack, initialData = {} }) => {
       } else {
         // If not JSON, get as text but still treat as success if HTTP status is OK
         const textResponse = await response.text();
-        console.log('✅ === BACKEND API RESPONSE === ✅');
-        console.log('✅ Response Data (Text):', textResponse);
-        console.log('✅ Response Data Type:', typeof textResponse);
         result = { message: 'Confirmation data saved successfully', textResponse: textResponse };
       }
       
       // Show success page after successful database submission (HTTP 200)
-      console.log('🎉 Confirmation submission successful - showing success page');
       setSuccess(true);
       setShowSuccess(true); // Show success page only after backend success
       return { success: true, data: result };
       
     } catch (err) {
-      console.error('Confirmation submission error:', err);
       setError(err.message || 'Confirmation submission failed. Please try again.');
       return { success: false, error: err.message };
     } finally {
@@ -554,12 +494,6 @@ const SaleForm = ({ onBack, initialData = {} }) => {
       // Use provided form data or fall back to state
       const dataToUse = formDataToUse || allFormData;
       
-      console.log('🚀 === SALE & CONFORM CLICKED - PREPARING SALE-ONLY DATA === 🚀');
-      console.log('📊 Raw Form Data (Single Object):', dataToUse);
-      console.log('📋 Form Data Keys:', Object.keys(dataToUse));
-      console.log('📋 Form Data Values:', Object.values(dataToUse));
-      console.log('📊 Total Fields Collected:', Object.keys(dataToUse).length);
-      console.log('🔢 Application Number from URL:', applicationNo);
       
       // Transform data for backend API structure (without payment)
       const backendData = {
@@ -608,23 +542,17 @@ const SaleForm = ({ onBack, initialData = {} }) => {
           districtId: parseInt(dataToUse.districtId) || 0,
           pincode: parseInt(dataToUse.pincode) || 0,
           stateId: parseInt(dataToUse.stateId) || 0,
-          createdBy: 0 // You may need to get this from user context
+          createdBy: getEmpId() // Get empId from login data
         },
         
         // Additional fields
         studAdmsNo: parseInt(applicationNo) || 0, // Use application number as admission number
         proId: parseInt(dataToUse.proId) || 1, // Use actual PRO ID, default to 1
-        createdBy: 0 // You may need to get this from user context
+        createdBy: getEmpId() // Get empId from login data
         
         // Note: No paymentDetails object for sale-only submission
       };
       
-      console.log('🔄 === SALE-ONLY BACKEND DATA OBJECT READY === 🔄');
-      console.log('📤 Sale-Only Backend Data Object:', backendData);
-      console.log('📋 Backend Data Keys:', Object.keys(backendData));
-      console.log('📋 Backend Data Values:', Object.values(backendData));
-      console.log('📊 Backend Fields Count:', Object.keys(backendData).length);
-      console.log('🔢 ID Fields:', Object.entries(backendData).filter(([key, value]) => key.includes('Id')).map(([key, value]) => `${key}: ${value}`));
       console.log('🚫 Payment Details: EXCLUDED (sale-only mode)');
       console.log('🎯 === SALE-ONLY BACKEND DATA OBJECT COMPLETE === 🎯');
       
@@ -644,7 +572,6 @@ const SaleForm = ({ onBack, initialData = {} }) => {
       
       // Check if response is JSON
       const contentType = response.headers.get('content-type');
-      console.log('📋 Response Content-Type:', contentType);
       
       let result;
       if (contentType && contentType.includes('application/json')) {
@@ -686,6 +613,18 @@ const SaleForm = ({ onBack, initialData = {} }) => {
   const handleOrientationInfoSuccess = (data) => {
     console.log('🔄 Orientation Info Success - Adding to single object:', data);
     addFormData(data);
+  };
+
+  // Handle data fetched from StatusHeader
+  const handleStatusHeaderDataFetched = (data) => {
+    console.log('📊 StatusHeader fetched data:', data);
+    // Update allFormData with the fetched academic year data
+    setAllFormData(prev => ({
+      ...prev,
+      academicYear: data.academicYear || prev.academicYear,
+      academicYearId: data.academicYearId || prev.academicYearId,
+      applicationFee: data.applicationFee || prev.applicationFee
+    }));
   };
 
   const handleAddressInfoSuccess = (data) => {
@@ -734,10 +673,117 @@ const SaleForm = ({ onBack, initialData = {} }) => {
     handleNextStep();
   };
 
-  const handleSingleButton = () => {
-    console.log('Single button clicked - proceed to payment');
-    // Add your single button logic here
-    handleNextStep();
+  const handleSingleButton = async () => {
+    console.log('Single button clicked - proceed to payment with validation');
+    console.log('🔍 All Form Data before validation:', allFormData);
+    console.log('🔍 Orientation Name in allFormData:', allFormData.orientationName);
+    
+    // Debug: Log specific fields that should be filled
+    console.log('🔍 Academic Fields Debug:', {
+      orientationBatch: allFormData.orientationBatch,
+      schoolState: allFormData.schoolState,
+      schoolDistrict: allFormData.schoolDistrict,
+      schoolName: allFormData.schoolName,
+      scoreMarks: allFormData.scoreMarks, // Changed from 'marks' to 'scoreMarks'
+      bloodGroup: allFormData.bloodGroup,
+      caste: allFormData.caste,
+      religion: allFormData.religion,
+      foodType: allFormData.foodType,
+      schoolType: allFormData.schoolType
+    });
+    
+    console.log('🔍 Concession Fields Debug:', {
+      givenBy: allFormData.givenBy,
+      authorizedBy: allFormData.authorizedBy,
+      reason: allFormData.reason
+    });
+    
+    console.log('🔍 Family Fields Debug:', {
+      fatherName: allFormData.fatherName,
+      fatherPhoneNumber: allFormData.fatherPhoneNumber,
+      fatherEmail: allFormData.fatherEmail,
+      motherName: allFormData.motherName,
+      motherPhoneNumber: allFormData.motherPhoneNumber,
+      motherEmail: allFormData.motherEmail
+    });
+    
+    try {
+      // Always validate Step 1 forms (Personal, Orientation, Address) regardless of current step
+      // This ensures field-wise errors show up for Step 1 forms
+      console.log('🔍 All Form Data for Step 1 validation:', allFormData);
+      console.log('🔍 Personal Information fields in allFormData:', {
+        firstName: allFormData.firstName,
+        surname: allFormData.surname,
+        gender: allFormData.gender,
+        aaparNo: allFormData.aaparNo,
+        dateOfBirth: allFormData.dateOfBirth,
+        aadharCardNo: allFormData.aadharCardNo,
+        quota: allFormData.quota,
+        admissionType: allFormData.admissionType,
+        phoneNumber: allFormData.phoneNumber
+      });
+      console.log('🔍 Address Information fields in allFormData:', {
+        doorNo: allFormData.doorNo,
+        streetName: allFormData.streetName,
+        area: allFormData.area,
+        pincode: allFormData.pincode,
+        mandal: allFormData.mandal,
+        city: allFormData.city
+      });
+      
+      const step1ValidationResult = await validateAllForms(allFormData, 1, category);
+      console.log('🔍 Step 1 validation result:', step1ValidationResult);
+      
+      // Only validate Step 2 forms if we're on Step 2
+      let step2ValidationResult = { isValid: true, errors: {} };
+      if (currentStep === 2) {
+        step2ValidationResult = await validateAllForms(allFormData, 2, category);
+      }
+      
+      // Only validate orientation fields if we're on Step 1 (Sale)
+      let orientationErrors = {};
+      if (currentStep === 1 && orientationValidationFn) {
+        orientationErrors = await orientationValidationFn();
+        console.log('Orientation validation errors:', orientationErrors);
+      }
+      
+      // Combine all errors from both steps
+      const allErrors = { 
+        ...step1ValidationResult.errors, 
+        ...step2ValidationResult.errors, 
+        ...orientationErrors 
+      };
+      
+      // Check if all validations pass
+      const isValid = step1ValidationResult.isValid && 
+                     step2ValidationResult.isValid && 
+                     Object.keys(orientationErrors).length === 0;
+      
+      console.log('Combined validation result:', { isValid, allErrors });
+      
+      if (isValid) {
+        console.log('✅ All forms validated successfully - proceeding to payment');
+        // Clear any existing field-wise errors
+        setFieldWiseErrors({});
+        return 'success'; // Return success indicator
+      } else {
+        console.log('❌ Form validation failed:', allErrors);
+        
+        // Set field-wise errors for display
+        setFieldWiseErrors(allErrors);
+        console.log('🔍 Setting field-wise errors:', allErrors);
+        console.log('🔍 Field-wise errors keys:', Object.keys(allErrors));
+        console.log('🔍 Field-wise errors count:', Object.keys(allErrors).length);
+        
+        // Show user-friendly error message
+        const errorMessage = getMissingFieldsMessage(allErrors);
+        console.log(`Please complete all required fields before proceeding to payment. Missing: ${errorMessage}`);
+        return 'error'; // Return error indicator
+      }
+    } catch (error) {
+      console.error('Validation error:', error);
+      return 'error'; // Return error indicator
+    }
   };
 
   // Debug logging for status and navigation state
@@ -802,6 +848,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
         showSuccess={false} // Not success, just confirmation
         showConfirmation={showConform} // Pass showConform to show confirmation mode
         currentStep={currentStep} // Pass current step for progress header
+        onStatusHeaderDataFetched={handleStatusHeaderDataFetched}
       />
       
       {/* Show confirmation steps when in confirmation mode */}
@@ -826,6 +873,8 @@ const SaleForm = ({ onBack, initialData = {} }) => {
                 <FamilyInformation 
                   formData={allFormData.personalInfo || {}} 
                   onSuccess={handleFamilyInfoSuccess}
+                  externalErrors={fieldWiseErrors}
+                  onClearFieldError={clearSpecificFieldError}
                 />
               </div>
               
@@ -838,6 +887,8 @@ const SaleForm = ({ onBack, initialData = {} }) => {
                   profileData={studentProfileData} 
                   onSuccess={handleAcademicInfoSuccess}
                   category={category}
+                  externalErrors={fieldWiseErrors}
+                  onClearFieldError={clearSpecificFieldError}
                 />
               </div>
               
@@ -845,6 +896,8 @@ const SaleForm = ({ onBack, initialData = {} }) => {
                 <ConcessionInformation 
                   category={category} 
                   onSuccess={handleConcessionInfoSuccess}
+                  externalErrors={fieldWiseErrors}
+                  onClearFieldError={clearSpecificFieldError}
                 />
               </div>
             </>
@@ -861,6 +914,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
               isConfirmationMode={true}
               onSubmitConfirmation={submitConfirmation}
               isSubmitting={isSubmitting}
+              fieldWiseErrors={fieldWiseErrors}
             />
           </div>
         </div>
@@ -877,19 +931,47 @@ const SaleForm = ({ onBack, initialData = {} }) => {
           {/* Personal Information Form */}
           <div className={styles.saleFormSection}>
         
-            <PersonalInformation onSuccess={handlePersonalInfoSuccess} />
+            <PersonalInformation 
+              onSuccess={handlePersonalInfoSuccess} 
+              externalErrors={Object.fromEntries(
+                Object.entries(fieldWiseErrors).filter(([key]) => 
+                  ['firstName', 'surname', 'gender', 'aaparNo', 'dateOfBirth', 'aadharCardNo', 'quota', 'admissionType', 'phoneNumber'].includes(key)
+                )
+              )}
+              onClearFieldError={clearSpecificFieldError}
+            />
           </div>
           
           {/* Orientation Information Form */}
           <div className={styles.saleFormSection}>
            
-            <OrientationInformation onSuccess={handleOrientationInfoSuccess} />
+            <OrientationInformation 
+              onSuccess={handleOrientationInfoSuccess} 
+              externalErrors={Object.fromEntries(
+                Object.entries(fieldWiseErrors).filter(([key]) => 
+                  ['academicYear', 'branch', 'branchType', 'city', 'studentType', 'joiningClass', 'orientationName'].includes(key)
+                )
+              )}
+              onClearFieldError={clearSpecificFieldError}
+              onValidationRef={handleOrientationValidationRef}
+              allFormData={allFormData}
+              academicYear={allFormData.academicYear || ""}
+              academicYearId={allFormData.academicYearId || null}
+            />
           </div>
           
           {/* Address Information Form */}
           <div className={styles.saleFormSection}>
            
-            <AddressInformation onSuccess={handleAddressInfoSuccess} />
+            <AddressInformation 
+              onSuccess={handleAddressInfoSuccess} 
+              externalErrors={Object.fromEntries(
+                Object.entries(fieldWiseErrors).filter(([key]) => 
+                  ['doorNo', 'streetName', 'area', 'pincode', 'mandal', 'city'].includes(key)
+                )
+              )}
+              onClearFieldError={clearSpecificFieldError}
+            />
           </div>
           
           {/* Action Buttons */}
@@ -903,6 +985,10 @@ const SaleForm = ({ onBack, initialData = {} }) => {
               isSubmitting={isSubmitting}
               formData={allFormData}
               onPaymentInfoSuccess={handlePaymentInfoSuccess}
+              onFieldWiseErrors={handleFieldWiseErrors}
+              onClearFieldWiseErrors={clearFieldWiseErrors}
+              onValidateOrientation={orientationValidationFn}
+              category={category}
             />
           </div>
         </div>

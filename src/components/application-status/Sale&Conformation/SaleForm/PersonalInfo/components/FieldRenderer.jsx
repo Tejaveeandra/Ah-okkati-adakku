@@ -22,7 +22,10 @@ const FieldRenderer = ({
   genderOptions,
   authorizedByOptions,
   errorClassName,
-  setFieldValue
+  setFieldValue,
+  isSubmitted,
+  externalErrors,
+  onClearFieldError
 }) => {
   const getOptions = useCallback((optionsKey) => {
     const options = (() => {
@@ -51,6 +54,11 @@ const FieldRenderer = ({
   const handleNameFieldChange = useCallback((e) => {
     const { name, value } = e.target;
     
+    // Clear external error for this field when user starts typing
+    if (onClearFieldError && externalErrors[name]) {
+      onClearFieldError(name);
+    }
+    
     // Filter out numbers and special characters, only allow letters and spaces
     const filteredValue = value.replace(/[^A-Za-z\s]/g, '');
     const capitalizedValue = capitalizeWords(filteredValue);
@@ -68,11 +76,16 @@ const FieldRenderer = ({
         }
       });
     }
-  }, [setFieldValue, handleChange]);
+  }, [setFieldValue, handleChange, onClearFieldError, externalErrors]);
 
   // Custom onChange handler for number-only fields (Aapar, Aadhar, Phone)
   const handleNumberFieldChange = useCallback((e) => {
     const { name, value } = e.target;
+    
+    // Clear external error for this field when user starts typing
+    if (onClearFieldError && externalErrors[name]) {
+      onClearFieldError(name);
+    }
     
     // Filter out everything except numbers
     let filteredValue = value.replace(/[^0-9]/g, '');
@@ -99,7 +112,7 @@ const FieldRenderer = ({
         }
       });
     }
-  }, [setFieldValue, handleChange]);
+  }, [setFieldValue, handleChange, onClearFieldError, externalErrors]);
 
   const renderedFields = useMemo(() => {
     return fields.map((field) => {
@@ -138,6 +151,7 @@ const FieldRenderer = ({
             const stringOptions = options.map(option => option.label || option.value);
             
             
+            
             // Get the current selected option to display the label
             const selectedOption = options.find(option => option.value === values[field.name]);
             const displayValue = selectedOption ? selectedOption.label : values[field.name] || "";
@@ -146,6 +160,11 @@ const FieldRenderer = ({
             const handleDropdownChange = (e) => {
               const selectedLabel = e.target.value;
               const selectedOption = options.find(option => option.label === selectedLabel);
+              
+              // Clear external error for this field when user selects an option
+              if (onClearFieldError && externalErrors[field.name]) {
+                onClearFieldError(field.name);
+              }
               
               if (selectedOption) {
                 // Store the value (ID) instead of the label
@@ -258,12 +277,14 @@ const FieldRenderer = ({
           touched={touched}
           errors={errors}
           className={errorClassName}
-          showOnChange={true}
+          showOnChange={false}
+          isSubmitted={isSubmitted}
+          externalErrors={externalErrors}
         />
       </div>
     );
     });
-  }, [fields, values, handleChange, handleBlur, touched, errors, admissionReferredByOptions, quotaOptions, admissionTypeOptions, genderOptions, authorizedByOptions, errorClassName, setFieldValue]);
+  }, [fields, values, handleChange, handleBlur, touched, errors, admissionReferredByOptions, quotaOptions, admissionTypeOptions, genderOptions, authorizedByOptions, errorClassName, setFieldValue, isSubmitted, externalErrors, onClearFieldError]);
 
   return renderedFields;
 };

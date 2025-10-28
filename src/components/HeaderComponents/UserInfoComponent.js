@@ -21,22 +21,53 @@ const UserInfoComponent = () => {
   const handleLogout = () => {
     console.log('🔍 Logging out user...');
     
-    // Clear all localStorage data
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('authTokenExp');
-    localStorage.removeItem('authTokenType');
-    localStorage.removeItem('empName');
-    localStorage.removeItem('empId');
-    localStorage.removeItem('designation');
-    localStorage.removeItem('role');
-    
-    // Close dropdown
-    setDropdownOpen(false);
-    
-    // Navigate to login page
-    navigate('/login');
-    
-    console.log('🔍 User logged out successfully');
+    try {
+      // Clear all localStorage data comprehensively
+      const keysToRemove = [
+        'authToken',
+        'authTokenExp', 
+        'authTokenType',
+        'token',
+        'empName',
+        'empId',
+        'designation',
+        'role',
+        'loginData',
+        'category',
+        'campusName',
+        'campusId',
+        'campus_id',
+        'academicYear',
+        'academicYearId'
+      ];
+      
+      // Remove each key
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+        console.log(`🔍 Removed ${key} from localStorage`);
+      });
+      
+      // Clear any remaining localStorage items that might be related to the app
+      const remainingKeys = Object.keys(localStorage);
+      remainingKeys.forEach(key => {
+        if (key.includes('auth') || key.includes('token') || key.includes('user') || key.includes('emp')) {
+          localStorage.removeItem(key);
+          console.log(`🔍 Removed additional key: ${key}`);
+        }
+      });
+      
+      // Close dropdown
+      setDropdownOpen(false);
+      
+      // Force navigation to login page
+      window.location.href = '/login';
+      
+      console.log('🔍 User logged out successfully');
+    } catch (error) {
+      console.error('🔍 Error during logout:', error);
+      // Fallback: try navigate
+      navigate('/login');
+    }
   };
 
   // Load user information from localStorage

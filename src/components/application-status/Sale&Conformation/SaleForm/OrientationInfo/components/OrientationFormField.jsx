@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import React, { useState } from 'react';
 import { Field } from 'formik';
 import Inputbox from '../../../../../../widgets/Inputbox/InputBox';
 import Dropdown from '../../../../../../widgets/Dropdown/Dropdown';
@@ -6,10 +6,11 @@ import FormError from './FormError';
 import { saleApi } from '../../services/saleApi';
 import styles from './OrientationFormField.module.css';
 
-// Debug flag for conditional logging
-const DEBUG = process.env.NODE_ENV === 'development';
 
-const OrientationFormField = ({ field, values, handleChange, handleBlur, errors, touched, setFieldValue }) => {
+const OrientationFormField = ({ field, values, handleChange, handleBlur, errors, touched, setFieldValue, externalErrors, onClearFieldError }) => {
+  // Get category from localStorage to determine if Branch dropdown should be disabled
+  const category = localStorage.getItem("category");
+  const isSchoolLogin = category === 'SCHOOL';
   // Combined state for better performance
   const [orientationState, setOrientationState] = useState({
     branchTypeOptions: [],
@@ -34,10 +35,7 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
     orientationOptions, 
     campusOptions, 
     loading, 
-    filteredStudentTypes, 
-    studentTypeId, 
-    joiningClassId, 
-    orientationId 
+    filteredStudentTypes 
   } = orientationState;
 
   // API call to fetch student types using saleApi service
@@ -54,7 +52,6 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
         setOrientationState(prev => ({ ...prev, studentTypeOptions: transformedOptions }));
       }
     } catch (error) {
-      console.error('Error fetching student types:', error);
     }
   };
 
@@ -85,7 +82,6 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
         setOrientationState(prev => ({ ...prev, campusOptions: transformedOptions }));
       }
     } catch (error) {
-      console.error('Error fetching campuses by category:', error);
     }
   };
 
@@ -108,7 +104,6 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
       const selectedCampus = campusOptions.find(option => option.label === values.branch);
       if (selectedCampus) {
         fetchClassesByCampus(selectedCampus.value);
-        console.log('Fetching classes for branch change, campus ID:', selectedCampus.value);
       }
     }
   }, [values.branch, campusOptions]);
@@ -116,8 +111,6 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
   // Filter student types based on branch type
   React.useEffect(() => {
     if (field.name === "studentType" && values.branchType) {
-      console.log('Branch Type selected:', values.branchType);
-      console.log('Filtering student types based on branch type');
       
       // Filter student types based on branch type
       const filtered = studentTypeOptions.filter(option => {
@@ -139,7 +132,6 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
       });
       
       setOrientationState(prev => ({ ...prev, filteredStudentTypes: filtered }));
-      console.log('Filtered student types:', filtered);
     } else if (field.name === "studentType" && !values.branchType) {
       // If no branch type selected, show all student types
       setOrientationState(prev => ({ ...prev, filteredStudentTypes: studentTypeOptions }));
@@ -157,7 +149,6 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
         if (matchingOption) {
           setFieldValue('branch', matchingOption.label);
           setFieldValue('branchId', matchingOption.value); // Store ID alongside label
-          console.log('Branch ID:', matchingOption.value);
           // Trigger API call to get branch details
           fetchBranchDetails(matchingOption.label);
         }
@@ -172,7 +163,6 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
       const matchingCampus = campusOptions.find(option => option.label === values.branch);
       if (matchingCampus) {
         setFieldValue('branchId', matchingCampus.value); // Store ID alongside existing label
-        console.log('Branch ID (on load):', matchingCampus.value);
         fetchBranchDetails(values.branch);
       }
     }
@@ -214,17 +204,14 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
         setOrientationState(prev => ({ ...prev, orientationOptions: transformedOptions }));
       }
     } catch (error) {
-      console.error('Error fetching orientations by class:', error);
     }
   };
 
   // API call to fetch classes by campus using saleApi service
   const fetchClassesByCampus = async (campusId) => {
-    console.log('fetchClassesByCampus called with campusId:', campusId);
     try {
       const data = await saleApi.getClassesByCampus(campusId);
       
-      console.log('API Response data:', data);
       
       if (data && Array.isArray(data)) {
         const transformedOptions = data.map(item => ({
@@ -232,18 +219,12 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
           label: item.className || item.class_name || item.name || item.title
         }));
         
-        console.log('Fetched classes from API:', data);
-        console.log('Transformed class options:', transformedOptions);
         setOrientationState(prev => ({ ...prev, classOptions: transformedOptions }));
-        console.log('classOptions state updated with:', transformedOptions);
       } else {
-        console.log('No classes data received from API:', data);
         // Set empty array if no data
         setOrientationState(prev => ({ ...prev, classOptions: [] }));
       }
     } catch (error) {
-      console.error('Error fetching classes by campus:', error);
-      console.error('Error details:', error.message);
       // Set empty array on error
       setOrientationState(prev => ({ ...prev, classOptions: [] }));
     }
@@ -269,11 +250,6 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
       if (data) {
         const { campusType, cityName, campusTypeId, cityId } = data;
         
-        console.log('API Response data:', data);
-        console.log('campusType:', campusType);
-        console.log('campusTypeId:', campusTypeId);
-        console.log('cityName:', cityName);
-        console.log('cityId:', cityId);
         
         // Update branch type options
         if (campusType) {
@@ -282,9 +258,7 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
           setFieldValue('branchType', campusType);
           if (campusTypeId) {
             setFieldValue('branchTypeId', campusTypeId); // Store ID alongside label
-            console.log('Branch Type ID (Campus Type ID):', campusTypeId);
           } else {
-            console.log('Branch Type ID (Campus Type ID) is undefined or null');
           }
         }
         
@@ -295,7 +269,6 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
           setFieldValue('city', cityName);
           if (cityId) {
             setFieldValue('cityId', cityId); // Store ID alongside label
-            console.log('City ID:', cityId);
           }
         }
       }
@@ -304,15 +277,12 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
       await fetchClassesByCampus(campusId);
       
     } catch (error) {
-      console.error('Error fetching branch details:', error);
     } finally {
       setOrientationState(prev => ({ ...prev, loading: false }));
     }
   };
 
   const getOptions = (optionsKey) => {
-    console.log('getOptions called with key:', optionsKey);
-    console.log('Current classOptions state:', classOptions);
     
     const optionsMap = {
       "branchTypeOptions": branchTypeOptions,
@@ -343,7 +313,6 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
     };
     
     const result = optionsMap[optionsKey] || [];
-    console.log('getOptions returning for', optionsKey, ':', result);
     return result;
   };
 
@@ -356,10 +325,6 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
           
           // Debug logging for joining class
           if (field.name === "joiningClass") {
-            console.log('Joining class field options:', field.options);
-            console.log('Available class options:', classOptions);
-            console.log('Resolved options:', options);
-            console.log('String options:', stringOptions);
           }
 
           // Auto-select campus for Branch field - PRESERVE AUTO-POPULATION
@@ -395,15 +360,12 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
                 // Also fetch classes for the auto-populated branch
                 if (matchingOption) {
                   fetchClassesByCampus(matchingOption.value);
-                  console.log('Auto-fetching classes for campus ID:', matchingOption.value);
                 } else {
                   // If no matching option found, try to get campus ID from localStorage or use a fallback
                   const campusId = localStorage.getItem('campusId') || localStorage.getItem('campus_id');
                   if (campusId) {
                     fetchClassesByCampus(campusId);
-                    console.log('Auto-fetching classes for campus ID from localStorage:', campusId);
                   } else {
-                    console.log('No campus ID available for fetching classes');
                   }
                 }
               }
@@ -412,17 +374,20 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
 
           // Handle Branch field change to trigger API call
           const handleBranchChange = (e) => {
+            // Clear external error for this field when user selects an option
+            if (onClearFieldError && externalErrors['branch']) {
+              onClearFieldError('branch');
+            }
+            
             handleChange(e);
             if (field.name === "branch") {
               // Find the selected option to get both label and ID
               const selectedOption = campusOptions.find(option => option.label === e.target.value);
               if (selectedOption) {
                 setFieldValue('branchId', selectedOption.value); // Store ID alongside label
-                console.log('Branch ID (on change):', selectedOption.value);
                 
                 // Fetch classes for the selected campus/branch
                 fetchClassesByCampus(selectedOption.value);
-                console.log('Fetching classes for campus ID:', selectedOption.value);
               }
               fetchBranchDetails(e.target.value);
             }
@@ -430,6 +395,11 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
 
           // Handle Student Type field change to store ID
           const handleStudentTypeChange = (e) => {
+            // Clear external error for this field when user selects an option
+            if (onClearFieldError && externalErrors['studentType']) {
+              onClearFieldError('studentType');
+            }
+            
             handleChange(e);
             if (field.name === "studentType") {
               // Find the selected option to get both label and ID
@@ -439,7 +409,6 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
               if (selectedOption) {
                 setFieldValue('studentTypeId', selectedOption.value);
                 setOrientationState(prev => ({ ...prev, studentTypeId: selectedOption.value }));
-                console.log('Student Type ID:', selectedOption.value);
               } else {
                 setFieldValue('studentTypeId', '');
                 setOrientationState(prev => ({ ...prev, studentTypeId: null }));
@@ -449,6 +418,11 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
 
           // Handle Joining Class field change to store ID
           const handleJoiningClassChange = (e) => {
+            // Clear external error for this field when user selects an option
+            if (onClearFieldError && externalErrors['joiningClass']) {
+              onClearFieldError('joiningClass');
+            }
+            
             handleChange(e);
             if (field.name === "joiningClass") {
               // Find the selected option to get both label and ID
@@ -457,7 +431,6 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
               if (selectedOption) {
                 setFieldValue('joiningClassId', selectedOption.value);
                 setOrientationState(prev => ({ ...prev, joiningClassId: selectedOption.value }));
-                console.log('Joining Class ID:', selectedOption.value);
               } else {
                 setFieldValue('joiningClassId', '');
                 setOrientationState(prev => ({ ...prev, joiningClassId: null }));
@@ -467,6 +440,11 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
 
           // Handle Orientation field change to store ID
           const handleOrientationChange = (e) => {
+            // Clear external error for this field when user selects an option
+            if (onClearFieldError && externalErrors['orientationName']) {
+              onClearFieldError('orientationName');
+            }
+            
             handleChange(e);
             if (field.name === "orientationName") {
               // Find the selected option to get both label and ID
@@ -475,7 +453,6 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
               if (selectedOption) {
                 setFieldValue('orientationId', selectedOption.value);
                 setOrientationState(prev => ({ ...prev, orientationId: selectedOption.value }));
-                console.log('Orientation ID:', selectedOption.value);
               } else {
                 setFieldValue('orientationId', '');
                 setOrientationState(prev => ({ ...prev, orientationId: null }));
@@ -486,6 +463,11 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
           // Custom handler for Academic Year field to filter invalid characters
           const handleAcademicYearChange = (e) => {
             const { name, value } = e.target;
+            
+            // Clear external error for this field when user starts typing
+            if (onClearFieldError && externalErrors[name]) {
+              onClearFieldError(name);
+            }
             
             // Allow letters, numbers, spaces, hyphens, and periods for academic year format
             const filteredValue = value.replace(/[^A-Za-z0-9\s\-\.]/g, '');
@@ -508,12 +490,33 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
                 name={field.name}
                 placeholder={field.placeholder}
                 value={fieldValue}
-                onChange={handleChange}
+                onChange={() => {}} // No-op function to prevent any changes
                 onBlur={handleBlur}
                 type="text"
                 error={meta.touched && meta.error}
                 required={field.required}
                 readOnly={true}
+                disabled={true} // Make it completely non-editable
+              />
+            );
+          }
+
+          // For School login, render Branch as read-only input field instead of dropdown
+          if (field.name === "branch" && isSchoolLogin) {
+            return (
+              <Inputbox
+                label={field.label}
+                id={field.id}
+                name={field.name}
+                placeholder={field.placeholder}
+                value={fieldValue}
+                onChange={() => {}} // No-op function to prevent any changes
+                onBlur={handleBlur}
+                type="text"
+                error={meta.touched && meta.error}
+                required={field.required}
+                readOnly={true}
+                disabled={true} // Make it completely non-editable for School login
               />
             );
           }
@@ -527,7 +530,7 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
               onChange={field.name === "branch" ? handleBranchChange : field.name === "studentType" ? handleStudentTypeChange : field.name === "joiningClass" ? handleJoiningClassChange : field.name === "orientationName" ? handleOrientationChange : handleChange}
               results={stringOptions}
               required={field.required}
-              disabled={loading}
+              disabled={loading || (field.name === "branch" && isSchoolLogin)}
               dropdownsearch={true}
             />
           ) : (
@@ -551,11 +554,11 @@ const OrientationFormField = ({ field, values, handleChange, handleBlur, errors,
         touched={touched}
         errors={errors}
         className={styles.orientation_info_error}
-        showOnChange={true}
+        externalErrors={externalErrors}
       />
     </div>
   );
 };
 
-export default memo(OrientationFormField);
+export default OrientationFormField;
 

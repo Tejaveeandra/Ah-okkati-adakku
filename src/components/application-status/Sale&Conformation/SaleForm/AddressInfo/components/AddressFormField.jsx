@@ -12,13 +12,21 @@ import styles from './AddressFormField.module.css';
 // Debug flag for conditional logging
 const DEBUG = process.env.NODE_ENV === 'development';
 
-const AddressFormField = ({ field, values, handleChange, handleBlur, errors, touched, setFieldValue }) => {
+const AddressFormField = ({ field, values, handleChange, handleBlur, errors, touched, setFieldValue, externalErrors, onClearFieldError }) => {
   // Combined state for better performance
   const [dropdownState, setDropdownState] = useState({
     stateOptions: [],
     districtOptions: [],
-    mandalOptions: [],
-    cityOptions: [],
+    mandalOptions: [
+      { value: "mandal1", label: "Mandal 1" },
+      { value: "mandal2", label: "Mandal 2" },
+      { value: "mandal3", label: "Mandal 3" }
+    ],
+    cityOptions: [
+      { value: "city1", label: "City 1" },
+      { value: "city2", label: "City 2" },
+      { value: "city3", label: "City 3" }
+    ],
     loading: false,
     mandalRenderKey: 0,
     cityRenderKey: 0
@@ -186,6 +194,7 @@ const AddressFormField = ({ field, values, handleChange, handleBlur, errors, tou
       return;
     }
 
+
     // Check if setFieldValue is available
     if (!setFieldValue) {
       return;
@@ -246,6 +255,7 @@ const AddressFormField = ({ field, values, handleChange, handleBlur, errors, tou
       return;
     }
 
+
     // Check if setFieldValue is available
     if (!setFieldValue) {
       return;
@@ -304,6 +314,11 @@ const AddressFormField = ({ field, values, handleChange, handleBlur, errors, tou
   const handlePincodeInputChange = (e) => {
     const { name, value } = e.target;
     
+    // Clear external error for this field when user starts typing
+    if (onClearFieldError && externalErrors[name]) {
+      onClearFieldError(name);
+    }
+    
     // Filter out everything except numbers
     const filteredValue = value.replace(/[^0-9]/g, '');
     
@@ -342,6 +357,11 @@ const AddressFormField = ({ field, values, handleChange, handleBlur, errors, tou
   const handleTextInputChange = (e) => {
     const { name, value } = e.target;
     
+    // Clear external error for this field when user starts typing
+    if (onClearFieldError && externalErrors[name]) {
+      onClearFieldError(name);
+    }
+    
     // Allow letters, numbers, spaces, hyphens, periods, and common address characters
     const filteredValue = value.replace(/[^A-Za-z0-9\s\-\.\/\\#]/g, '');
     
@@ -362,6 +382,11 @@ const AddressFormField = ({ field, values, handleChange, handleBlur, errors, tou
 
   // Handle mandal change to store ID
   const handleMandalChange = (e) => {
+    // Clear external error for this field when user selects an option
+    if (onClearFieldError && externalErrors[field.name]) {
+      onClearFieldError(field.name);
+    }
+    
     handleChange(e);
     if (field.name === "mandal") {
       // Find the selected option to get both label and ID
@@ -369,8 +394,6 @@ const AddressFormField = ({ field, values, handleChange, handleBlur, errors, tou
       if (selectedOption) {
         setFieldValue('mandalId', selectedOption.value);
         if (DEBUG) {
-          console.log('Mandal ID stored for backend:', selectedOption.value);
-          console.log('Mandal name:', selectedOption.label);
         }
       } else {
         setFieldValue('mandalId', '');
@@ -380,6 +403,11 @@ const AddressFormField = ({ field, values, handleChange, handleBlur, errors, tou
 
   // Handle city change to store ID
   const handleCityChange = (e) => {
+    // Clear external error for this field when user selects an option
+    if (onClearFieldError && externalErrors[field.name]) {
+      onClearFieldError(field.name);
+    }
+    
     handleChange(e);
     if (field.name === "city") {
       // Find the selected option to get both label and ID
@@ -387,8 +415,6 @@ const AddressFormField = ({ field, values, handleChange, handleBlur, errors, tou
       if (selectedOption) {
         setFieldValue('cityId', selectedOption.value);
         if (DEBUG) {
-          console.log('City ID stored for backend:', selectedOption.value);
-          console.log('City name:', selectedOption.label);
         }
       } else {
         setFieldValue('cityId', '');
@@ -415,11 +441,36 @@ const AddressFormField = ({ field, values, handleChange, handleBlur, errors, tou
         {({ field: fieldProps, meta }) => {
           const options = getOptions(field.options);
           const stringOptions = options.map(option => option.label || option.value);
+          
+          // Debug logging for mandal and city dropdowns
+          if (field.name === "mandal" || field.name === "city") {
+            // Debug information available if needed
+          }
+
+          // For State and District, render as read-only input fields instead of dropdowns
+          if (field.name === "state" || field.name === "district") {
+            return (
+              <Inputbox
+                label={field.label}
+                id={field.id}
+                name={field.name}
+                placeholder={field.placeholder}
+                value={values[field.name] || ""}
+                onChange={() => {}} // No-op function to prevent any changes
+                onBlur={handleBlur}
+                type="text"
+                error={meta.touched && meta.error}
+                required={field.required}
+                readOnly={true}
+                disabled={true} // Make it completely non-editable
+              />
+            );
+          }
 
           if (field.type === "dropdown") {
             return (
               <Dropdown
-                key={field.name === "mandal" ? `mandal-${mandalRenderKey}-${Date.now()}` : field.name === "city" ? `city-${cityRenderKey}-${Date.now()}` : field.id}
+                key={field.name === "mandal" ? `mandal-${mandalRenderKey}` : field.name === "city" ? `city-${cityRenderKey}` : field.id}
                 dropdownname={field.label}
                 id={field.id}
                 name={field.name}
@@ -427,7 +478,7 @@ const AddressFormField = ({ field, values, handleChange, handleBlur, errors, tou
                 onChange={field.name === "mandal" ? handleMandalChange : field.name === "city" ? handleCityChange : handleChange}
                 results={stringOptions}
                 required={field.required}
-                disabled={loading && (field.name === "mandal" || field.name === "city")}
+                disabled={false}
                 dropdownsearch={true}
               />
             );
@@ -491,7 +542,7 @@ const AddressFormField = ({ field, values, handleChange, handleBlur, errors, tou
         touched={touched}
         errors={errors}
         className={styles.address_info_error}
-        showOnChange={true}
+        externalErrors={externalErrors}
       />
     </div>
       

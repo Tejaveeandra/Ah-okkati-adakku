@@ -1,9 +1,18 @@
 import React from 'react';
 
-const FormError = ({ name, touched, errors, className, showOnChange = false }) => {
-  // Show error if field is touched AND has error
-  // OR if showOnChange is true AND field has error (for immediate validation)
-  const shouldShowError = (touched[name] && errors[name]) || (showOnChange && errors[name]);
+const FormError = ({ name, touched, errors, className, showOnChange = false, externalErrors = {} }) => {
+  // Priority: external error > formik error
+  // If external error exists, show it regardless of other conditions
+  if (externalErrors[name]) {
+    return (
+      <div className={className}>
+        {externalErrors[name]}
+      </div>
+    );
+  }
+  
+  // If no external error, show Formik error only when field is touched (not on change)
+  const shouldShowError = touched[name] && errors[name];
   
   if (!shouldShowError) return null;
   

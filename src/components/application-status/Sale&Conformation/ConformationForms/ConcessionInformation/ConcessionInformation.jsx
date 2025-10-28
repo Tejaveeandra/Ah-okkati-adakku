@@ -4,7 +4,7 @@ import Dropdown from '../../../../../widgets/Dropdown/Dropdown';
 import { useAuthorizedBy, useConcessionReasons, useConcessionTypes } from '../hooks/useConfirmationData';
 import styles from './ConcessionInformation.module.css';
 
-const ConcessionInformation = ({ category = 'COLLEGE', onSuccess }) => {
+const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors = {}, onClearFieldError }) => {
   // Debug logging for category
   console.log('🏫 ConcessionInformation Category Debug:', {
     receivedCategory: category,
@@ -89,6 +89,11 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess }) => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
+    // Clear external error if it exists
+    if (externalErrors[name] && onClearFieldError) {
+      onClearFieldError(name);
+    }
+    
     // Check if this is a concession field
     const concessionTypeId = getConcessionTypeId(name);
     
@@ -111,6 +116,11 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess }) => {
 
   const handleDropdownChange = (e) => {
     const { name, value } = e.target;
+    
+    // Clear external error if it exists
+    if (externalErrors[name] && onClearFieldError) {
+      onClearFieldError(name);
+    }
     
     // For authorized by fields, store both ID and label
     if (name === 'givenBy' || name === 'authorizedBy' || name === 'concessionWrittenBy') {
@@ -271,27 +281,57 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess }) => {
         {fields.map((field, index) => (
           <div key={field.name} className={styles.concession_field_wrapper}>
             {field.type === 'input' ? (
-              <Inputbox
-                label={field.label}
-                id={field.name}
-                name={field.name}
-                placeholder={field.placeholder}
-                value={formData[field.name] || ''}
-                onChange={handleInputChange}
-                type="text"
-              />
+              <>
+                <Inputbox
+                  label={field.label}
+                  id={field.name}
+                  name={field.name}
+                  placeholder={field.placeholder}
+                  value={formData[field.name] || ''}
+                  onChange={handleInputChange}
+                  type="text"
+                />
+                {externalErrors[field.name] && (
+                  <div style={{ 
+                    color: '#dc2626', 
+                    fontSize: '12px', 
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    <span>⚠️</span>
+                    <span>{externalErrors[field.name]}</span>
+                  </div>
+                )}
+              </>
             ) : (
-              <Dropdown
-                dropdownname={field.label}
-                name={field.name}
-                results={field.options}
-                value={formData[field.name] || ''}
-                onChange={handleDropdownChange}
-                dropdownsearch={true}
-                disabled={field.loading}
-                loading={field.loading}
-                placeholder={field.placeholder}
-              />
+              <>
+                <Dropdown
+                  dropdownname={field.label}
+                  name={field.name}
+                  results={field.options}
+                  value={formData[field.name] || ''}
+                  onChange={handleDropdownChange}
+                  dropdownsearch={true}
+                  disabled={field.loading}
+                  loading={field.loading}
+                  placeholder={field.placeholder}
+                />
+                {externalErrors[field.name] && (
+                  <div style={{ 
+                    color: '#dc2626', 
+                    fontSize: '12px', 
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    <span>⚠️</span>
+                    <span>{externalErrors[field.name]}</span>
+                  </div>
+                )}
+              </>
             )}
             {/* Debug info for dropdown fields */}
             {field.type === 'dropdown' && (
@@ -332,6 +372,19 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess }) => {
                 onChange={handleInputChange}
                 type="text"
               />
+              {externalErrors.concessionAmount && (
+                <div style={{ 
+                  color: '#dc2626', 
+                  fontSize: '12px', 
+                  marginTop: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  <span>⚠️</span>
+                  <span>{externalErrors.concessionAmount}</span>
+                </div>
+              )}
             </div>
             
             <div className={styles.concession_field_wrapper}>
@@ -350,6 +403,19 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess }) => {
               <div style={{fontSize: '10px', color: '#666', marginTop: '2px'}}>
                 Debug: concessionWrittenBy - Options: {authorizedBy?.length || 0}, Loading: {authorizedByLoading ? 'Yes' : 'No'}, Error: {authorizedByError || 'None'}
               </div>
+              {externalErrors.concessionWrittenBy && (
+                <div style={{ 
+                  color: '#dc2626', 
+                  fontSize: '12px', 
+                  marginTop: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  <span>⚠️</span>
+                  <span>{externalErrors.concessionWrittenBy}</span>
+                </div>
+              )}
             </div>
             
             <div className={styles.concession_field_wrapper}>
@@ -362,6 +428,19 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess }) => {
                 onChange={handleInputChange}
                 type="text"
               />
+              {externalErrors.additionalReason && (
+                <div style={{ 
+                  color: '#dc2626', 
+                  fontSize: '12px', 
+                  marginTop: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  <span>⚠️</span>
+                  <span>{externalErrors.additionalReason}</span>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -35,13 +35,13 @@ export const validationSchema = Yup.object({
     .required("Pincode is required")
     .matches(/^\d{6}$/, "Pincode must be exactly 6 digits"),
   
-  // State - Required dropdown (auto-populated from pincode)
+  // State - Optional dropdown (auto-populated from pincode)
   state: Yup.string()
-    .required("State is required"),
+    .notRequired(),
   
-  // District - Required dropdown (auto-populated from pincode)
+  // District - Optional dropdown (auto-populated from pincode)
   district: Yup.string()
-    .required("District is required"),
+    .notRequired(),
   
   // Mandal - Required dropdown (cascading from district)
   mandal: Yup.string()

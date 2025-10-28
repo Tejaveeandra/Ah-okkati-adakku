@@ -16,7 +16,6 @@ export const useOrientationSubmission = () => {
     setSuccess(false);
 
     try {
-      console.log("Orientation Information values:", values);
       
       // Validate required fields
       const requiredFields = ['academicYear', 'branch', 'branchType', 'studentType', 'joiningClass', 'orientationName', 'city'];
@@ -45,12 +44,10 @@ export const useOrientationSubmission = () => {
         proReceiptNo: values.proReceiptNo || ''
       };
 
-      console.log("Transformed orientation data for submission:", orientationData);
       
       // Submit to backend using saleApi service
       const response = await saleApi.submitFormSection('orientation', orientationData);
       
-      console.log("Orientation submission response:", response);
       setSuccess(true);
       
       // Call success callback if provided
@@ -60,7 +57,6 @@ export const useOrientationSubmission = () => {
       
       return { success: true, data: response };
     } catch (err) {
-      console.error('Orientation submission error:', err);
       setError(err.message || 'Orientation submission failed. Please try again.');
       return { success: false, error: err.message };
     } finally {

@@ -47,12 +47,100 @@ export const comprehensiveValidationSchema = Yup.object({
   admissionType: Yup.string()
     .required("Admission Type is required"),
   
+  // Family Information Fields
   fatherName: Yup.string()
     .trim()
     .min(2, "Father Name must be at least 2 characters")
     .max(50, "Father Name must be less than 50 characters")
     .matches(/^[A-Za-z\s]+$/, "Father Name must contain only letters")
     .required("Father Name is required"),
+  
+  fatherPhoneNumber: Yup.string()
+    .trim()
+    .matches(/^[0-9]{10}$/, "Father phone number must be exactly 10 digits")
+    .required("Father phone number is required"),
+  
+  fatherEmail: Yup.string()
+    .email("Please enter a valid email address")
+    .max(100, "Email must not exceed 100 characters"),
+  
+  fatherSector: Yup.string()
+    .max(100, "Sector must not exceed 100 characters"),
+  
+  fatherOccupation: Yup.string()
+    .max(100, "Occupation must not exceed 100 characters"),
+  
+  fatherOtherOccupation: Yup.string()
+    .max(100, "Other occupation must not exceed 100 characters"),
+  
+  motherName: Yup.string()
+    .trim()
+    .min(2, "Mother Name must be at least 2 characters")
+    .max(50, "Mother Name must be less than 50 characters")
+    .matches(/^[A-Za-z\s]+$/, "Mother Name must contain only letters")
+    .required("Mother Name is required"),
+  
+  motherPhoneNumber: Yup.string()
+    .trim()
+    .matches(/^[0-9]{10}$/, "Mother phone number must be exactly 10 digits")
+    .required("Mother phone number is required"),
+  
+  motherEmail: Yup.string()
+    .email("Please enter a valid email address")
+    .max(100, "Email must not exceed 100 characters"),
+  
+  motherSector: Yup.string()
+    .max(100, "Sector must not exceed 100 characters"),
+  
+  motherOccupation: Yup.string()
+    .max(100, "Occupation must not exceed 100 characters"),
+  
+  motherOtherOccupation: Yup.string()
+    .max(100, "Other occupation must not exceed 100 characters"),
+  
+  // Academic Information Fields
+  orientationBatch: Yup.string()
+    .required("Orientation Batch is required"),
+  
+  schoolState: Yup.string()
+    .required("School State is required"),
+  
+  schoolDistrict: Yup.string()
+    .required("School District is required"),
+  
+  schoolName: Yup.string()
+    .trim()
+    .min(2, "School Name must be at least 2 characters")
+    .max(100, "School Name must be less than 100 characters")
+    .required("School Name is required"),
+  
+  marks: Yup.string()
+    .required("Marks are required"),
+  
+  bloodGroup: Yup.string()
+    .required("Blood Group is required"),
+  
+  caste: Yup.string()
+    .required("Caste is required"),
+  
+  religion: Yup.string()
+    .required("Religion is required"),
+  
+  foodType: Yup.string()
+    .required("Food Type is required"),
+  
+  schoolType: Yup.string()
+    .required("School Type is required"),
+  
+  // Concession Information Fields
+  givenBy: Yup.string()
+    .required("Given By is required"),
+  
+  authorizedBy: Yup.string()
+    .required("Authorized By is required"),
+  
+  reason: Yup.string()
+    .required("Reason is required"),
   
   phoneNumber: Yup.string()
     .trim()
@@ -119,7 +207,7 @@ export const comprehensiveValidationSchema = Yup.object({
 });
 
 // Function to validate all form data comprehensively
-export const validateAllForms = async (formData) => {
+export const validateAllForms = async (formData, currentStep = 2, category = 'COLLEGE') => {
   try {
     // Add defensive check for formData
     if (!formData || typeof formData !== 'object') {
@@ -131,6 +219,29 @@ export const validateAllForms = async (formData) => {
     }
 
     console.log('Starting validation with formData:', formData);
+    console.log('🔍 Orientation Name in formData:', formData.orientationName);
+    console.log('🔍 Current Step:', currentStep);
+    console.log('🔍 Category:', category);
+    
+    // Debug: Log specific fields being validated
+    console.log('🔍 Validation Debug - Academic Fields:', {
+      orientationBatch: formData.orientationBatch,
+      schoolState: formData.schoolState,
+      schoolDistrict: formData.schoolDistrict,
+      schoolName: formData.schoolName,
+      scoreMarks: formData.scoreMarks, // Changed from 'marks' to 'scoreMarks'
+      bloodGroup: formData.bloodGroup,
+      caste: formData.caste,
+      religion: formData.religion,
+      foodType: formData.foodType,
+      schoolType: formData.schoolType
+    });
+    
+    console.log('🔍 Validation Debug - Concession Fields:', {
+      givenBy: formData.givenBy,
+      authorizedBy: formData.authorizedBy,
+      reason: formData.reason
+    });
     
     // Since both OrientationInfo and AddressInfo use 'city' field, we need to handle this conflict
     // We'll validate each form section separately and then combine the results
@@ -146,18 +257,34 @@ export const validateAllForms = async (formData) => {
       quota: formData.quota || '',
       admissionType: formData.admissionType || '',
       fatherName: formData.fatherName || '',
-      phoneNumber: formData.phoneNumber || ''
-    };
-    
-    // Orientation Information validation (using city from orientation)
-    const orientationFields = {
-      academicYear: formData.academicYear || '',
-      branch: formData.branch || '',
-      branchType: formData.branchType || '',
-      city: formData.city || '', // This will be from OrientationInfo
-      studentType: formData.studentType || '',
-      joiningClass: formData.joiningClass || '',
-      orientationName: formData.orientationName || ''
+      fatherPhoneNumber: formData.fatherPhoneNumber || '',
+      fatherEmail: formData.fatherEmail || '',
+      fatherSector: formData.fatherSector || '',
+      fatherOccupation: formData.fatherOccupation || '',
+      fatherOtherOccupation: formData.fatherOtherOccupation || '',
+      motherName: formData.motherName || '',
+      motherPhoneNumber: formData.motherPhoneNumber || '',
+      motherEmail: formData.motherEmail || '',
+      motherSector: formData.motherSector || '',
+      motherOccupation: formData.motherOccupation || '',
+      motherOtherOccupation: formData.motherOtherOccupation || '',
+      // phoneNumber: formData.phoneNumber || '', // Removed - not part of Family Information
+      // Academic Information fields
+      orientationName: formData.orientationName || '',
+      orientationBatch: formData.orientationBatch || '',
+      schoolState: formData.schoolState || '',
+      schoolDistrict: formData.schoolDistrict || '',
+      schoolName: formData.schoolName || '',
+      scoreMarks: formData.scoreMarks || '', // Changed from 'marks' to 'scoreMarks'
+      bloodGroup: formData.bloodGroup || '',
+      caste: formData.caste || '',
+      religion: formData.religion || '',
+      foodType: formData.foodType || '',
+      schoolType: formData.schoolType || '',
+      // Concession Information fields
+      givenBy: formData.givenBy || '',
+      authorizedBy: formData.authorizedBy || '',
+      reason: formData.reason || ''
     };
     
     // Address Information validation (we'll check if address city exists separately)
@@ -171,97 +298,173 @@ export const validateAllForms = async (formData) => {
       mandal: formData.mandal || ''
     };
     
-    // Validate each section
+    // Only validate forms that are relevant to the current step
     const personalErrors = {};
-    const orientationErrors = {};
     const addressErrors = {};
     
-    // Validate Personal Information
-    try {
-      console.log('Validating personal fields:', personalFields);
-      await Yup.object({
-        firstName: Yup.string().trim().min(2).max(50).matches(/^[A-Za-z\s]+$/).required(),
-        surname: Yup.string().trim().min(2).max(50).matches(/^[A-Za-z\s]+$/).required(),
-        gender: Yup.string().required(),
-        aaparNo: Yup.string().trim().required(),
-        dateOfBirth: Yup.date().nullable().required().max(new Date()).test("age", "Age must be at least 5 years", function(value) {
-          if (!value) return false;
-          const today = new Date();
-          const birthDate = new Date(value);
-          const age = today.getFullYear() - birthDate.getFullYear();
-          return age >= 5;
-        }),
-        aadharCardNo: Yup.string().trim().matches(/^\d{12}$/).required(),
-        quota: Yup.string().required(),
-        admissionType: Yup.string().required(),
-        fatherName: Yup.string().trim().min(2).max(50).matches(/^[A-Za-z\s]+$/).required(),
-        phoneNumber: Yup.string().trim().matches(/^[6-9]\d{9}$/).required()
-      }).validate(personalFields, { abortEarly: false });
-    } catch (error) {
-      console.log('Personal validation error:', error);
-      if (error.inner) {
-        error.inner.forEach(err => {
-          personalErrors[err.path] = err.message;
-        });
-      } else {
-        personalErrors.general = error.message;
+    if (currentStep === 1) {
+      // Step 1: Personal Information + Orientation Information + Address Information
+      // Create a separate object with only Step 1 fields
+      const step1Fields = {
+        // Personal Information fields (excluding Formik-handled fields)
+        firstName: formData.firstName || '',
+        surname: formData.surname || '',
+        gender: formData.gender || '',
+        aaparNo: formData.aaparNo || '',
+        dateOfBirth: formData.dateOfBirth || '',
+        aadharCardNo: formData.aadharCardNo || '',
+        quota: formData.quota || '',
+        // admissionType: formData.admissionType || '', // Removed - handled by Formik
+        phoneNumber: formData.phoneNumber || '',
+        // Address Information fields
+        doorNo: formData.doorNo || '',
+        streetName: formData.streetName || '',
+        area: formData.area || '',
+        pincode: formData.pincode || '',
+        mandal: formData.mandal || ''
+      };
+      
+      try {
+        console.log('Validating Step 1 forms (Personal + Orientation + Address)');
+        console.log('🔍 Step 1 fields being validated:', step1Fields);
+        await Yup.object({
+          // Personal Information fields only (excluding Formik-handled fields)
+          firstName: Yup.string().trim().min(2).max(50).matches(/^[A-Za-z\s]+$/).required(),
+          surname: Yup.string().trim().min(2).max(50).matches(/^[A-Za-z\s]+$/).required(),
+          gender: Yup.string().required(),
+          aaparNo: Yup.string().trim().required(),
+          dateOfBirth: Yup.date().nullable().required().max(new Date()).test("age", "Age must be at least 5 years", function(value) {
+            if (!value) return false;
+            const today = new Date();
+            const birthDate = new Date(value);
+            const age = today.getFullYear() - birthDate.getFullYear();
+            return age >= 5;
+          }),
+          aadharCardNo: Yup.string().trim().matches(/^\d{12}$/).required(),
+          quota: Yup.string().required(),
+          // admissionType: Yup.string().required(), // Removed - handled by Formik
+          phoneNumber: Yup.string().trim().matches(/^[6-9]\d{9}$/).required(),
+          // Address Information fields only
+          doorNo: Yup.string().trim().required(),
+          streetName: Yup.string().trim().required(),
+          area: Yup.string().trim().required(),
+          pincode: Yup.string().trim().matches(/^\d{6}$/).required(),
+          mandal: Yup.string().required()
+        }).validate(step1Fields, { abortEarly: false });
+      } catch (error) {
+        console.log('Step 1 validation error:', error);
+        if (error.inner) {
+          error.inner.forEach(err => {
+            personalErrors[err.path] = err.message;
+          });
+        } else {
+          personalErrors.general = error.message;
+        }
+      }
+    } else if (currentStep === 2) {
+      // Step 2: Family Information + Academic Information + Concession Information
+      // Create a separate object with only Step 2 fields
+      const step2Fields = {
+        // Family Information fields
+        fatherName: formData.fatherName || '',
+        fatherPhoneNumber: formData.fatherPhoneNumber || '',
+        fatherEmail: formData.fatherEmail || '',
+        fatherSector: formData.fatherSector || '',
+        fatherOccupation: formData.fatherOccupation || '',
+        fatherOtherOccupation: formData.fatherOtherOccupation || '',
+        motherName: formData.motherName || '',
+        motherPhoneNumber: formData.motherPhoneNumber || '',
+        motherEmail: formData.motherEmail || '',
+        motherSector: formData.motherSector || '',
+        motherOccupation: formData.motherOccupation || '',
+        motherOtherOccupation: formData.motherOtherOccupation || '',
+        // Academic Information fields
+        orientationBatch: formData.orientationBatch || '',
+        schoolState: formData.schoolState || '',
+        schoolDistrict: formData.schoolDistrict || '',
+        schoolName: formData.schoolName || '',
+        scoreMarks: formData.scoreMarks || '',
+        bloodGroup: formData.bloodGroup || '',
+        caste: formData.caste || '',
+        religion: formData.religion || '',
+        foodType: formData.foodType || '',
+        schoolType: formData.schoolType || '',
+        // Concession Information fields
+        givenBy: formData.givenBy || '',
+        authorizedBy: formData.authorizedBy || '',
+        reason: formData.reason || ''
+      };
+      
+      try {
+        console.log('Validating Step 2 forms (Family + Academic + Concession)');
+        console.log('🔍 Step 2 fields being validated:', step2Fields);
+        console.log('🔍 Category for validation:', category);
+        
+        // Create conditional validation schema based on category
+        let validationSchema = {
+          // Family Information fields (always required)
+          fatherName: Yup.string().trim().min(2).max(50).matches(/^[A-Za-z\s]+$/).required(),
+          fatherPhoneNumber: Yup.string().trim().matches(/^[0-9]{10}$/).required(),
+          fatherEmail: Yup.string().email().max(100),
+          fatherSector: Yup.string().max(100),
+          fatherOccupation: Yup.string().max(100),
+          fatherOtherOccupation: Yup.string().max(100),
+          motherName: Yup.string().trim().min(2).max(50).matches(/^[A-Za-z\s]+$/).required(),
+          motherPhoneNumber: Yup.string().trim().matches(/^[0-9]{10}$/).required(),
+          motherEmail: Yup.string().email().max(100),
+          motherSector: Yup.string().max(100),
+          motherOccupation: Yup.string().max(100),
+          motherOtherOccupation: Yup.string().max(100),
+          // phoneNumber: Yup.string().trim().matches(/^[6-9]\d{9}$/).required(), // Removed - not part of Family Information
+          
+          // Academic Information fields - conditional based on category
+          // orientationName: Yup.string().required(), // Removed - handled by Formik
+          scoreMarks: Yup.string().required(), // Changed from 'marks' to 'scoreMarks'
+          bloodGroup: Yup.string().required(),
+          caste: Yup.string().required(),
+          religion: Yup.string().required(),
+          foodType: Yup.string().required(),
+          
+          // Concession Information fields (always required)
+          givenBy: Yup.string().required(),
+          authorizedBy: Yup.string().required(),
+          reason: Yup.string().required()
+        };
+        
+        // Add school-specific fields only for COLLEGE category
+        if (category === 'COLLEGE') {
+          console.log('🏫 COLLEGE category - adding school-specific validations');
+          validationSchema = {
+            ...validationSchema,
+            orientationBatch: Yup.string().required(),
+            schoolState: Yup.string().required(),
+            schoolDistrict: Yup.string().required(),
+            schoolName: Yup.string().trim().min(2).max(100).required(),
+            schoolType: Yup.string().required()
+          };
+        } else {
+          console.log('🏫 SCHOOL category - skipping school-specific validations');
+        }
+        
+        await Yup.object(validationSchema).validate(step2Fields, { abortEarly: false });
+      } catch (error) {
+        console.log('Step 2 validation error:', error);
+        if (error.inner) {
+          error.inner.forEach(err => {
+            personalErrors[err.path] = err.message;
+          });
+        } else {
+          personalErrors.general = error.message;
+        }
       }
     }
     
-    // Validate Orientation Information
-    try {
-      console.log('Validating orientation fields:', orientationFields);
-      await Yup.object({
-        academicYear: Yup.string().trim().min(3).max(20).required(),
-        branch: Yup.string().required(),
-        branchType: Yup.string().required(),
-        city: Yup.string().required(),
-        studentType: Yup.string().required(),
-        joiningClass: Yup.string().required(),
-        orientationName: Yup.string().required()
-      }).validate(orientationFields, { abortEarly: false });
-    } catch (error) {
-      console.log('Orientation validation error:', error);
-      if (error.inner) {
-        error.inner.forEach(err => {
-          orientationErrors[err.path] = err.message;
-        });
-      } else {
-        orientationErrors.general = error.message;
-      }
-    }
+    // Skip Orientation Information validation - let Formik handle it locally
+    console.log('Skipping orientation fields validation - using local Formik validation instead');
+    // Orientation fields will be validated by their respective Formik forms
     
-    // Validate Address Information
-    try {
-      console.log('Validating address fields:', addressFields);
-      await Yup.object({
-        doorNo: Yup.string().trim().min(1).max(20).required(),
-        streetName: Yup.string().trim().min(2).max(100).required(),
-        area: Yup.string().trim().min(2).max(100).required(),
-        pincode: Yup.string().trim().matches(/^\d{6}$/).required(),
-        state: Yup.string().required(),
-        district: Yup.string().required(),
-        mandal: Yup.string().required()
-      }).validate(addressFields, { abortEarly: false });
-    } catch (error) {
-      console.log('Address validation error:', error);
-      if (error.inner) {
-        error.inner.forEach(err => {
-          addressErrors[err.path] = err.message;
-        });
-      } else {
-        addressErrors.general = error.message;
-      }
-    }
-    
-    // Check if address city exists (it might be overwritten by orientation city)
-    if (!formData.city || formData.city === formData.branchCity) {
-      // If city is the same as branchCity, it means address city was overwritten
-      addressErrors.addressCity = "Address City is required";
-    }
-    
-    // Combine all errors
-    const allErrors = { ...personalErrors, ...orientationErrors, ...addressErrors };
+    // Combine all errors (excluding orientation errors - handled by Formik)
+    const allErrors = { ...personalErrors, ...addressErrors };
     
     // Additional custom validations
     // Employee ID validation (if Staff children quota is selected)
@@ -317,7 +520,35 @@ export const getMissingFieldsMessage = (errors) => {
     quota: "Quota",
     admissionType: "Admission Type",
     fatherName: "Father Name",
+    fatherPhoneNumber: "Father Phone Number",
+    fatherEmail: "Father Email",
+    fatherSector: "Father Sector",
+    fatherOccupation: "Father Occupation",
+    fatherOtherOccupation: "Father Other Occupation",
+    motherName: "Mother Name",
+    motherPhoneNumber: "Mother Phone Number",
+    motherEmail: "Mother Email",
+    motherSector: "Mother Sector",
+    motherOccupation: "Mother Occupation",
+    motherOtherOccupation: "Mother Other Occupation",
     phoneNumber: "Phone Number",
+    
+    // Academic Information
+    orientationBatch: "Orientation Batch",
+    schoolState: "School State",
+    schoolDistrict: "School District",
+    schoolName: "School Name",
+    marks: "Marks",
+    bloodGroup: "Blood Group",
+    caste: "Caste",
+    religion: "Religion",
+    foodType: "Food Type",
+    schoolType: "School Type",
+    
+    // Concession Information
+    givenBy: "Given By",
+    authorizedBy: "Authorized By",
+    reason: "Reason",
     
     // Orientation Information
     academicYear: "Academic Year",

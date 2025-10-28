@@ -13,15 +13,11 @@ const AdditionalFields = ({
   genderOptions,
   authorizedByOptions,
   formFields,
-  setFieldValue
+  setFieldValue,
+  isSubmitted,
+  externalErrors,
+  onClearFieldError
 }) => {
-  console.log('=== ADDITIONAL FIELDS RECEIVED DATA ===');
-  console.log('Received quotaOptions:', quotaOptions.length, 'items');
-  console.log('Received admissionReferredByOptions:', admissionReferredByOptions.length, 'items');
-  console.log('Received admissionTypeOptions:', admissionTypeOptions.length, 'items');
-  console.log('Received genderOptions:', genderOptions.length, 'items');
-  console.log('Received authorizedByOptions:', authorizedByOptions.length, 'items');
-  console.log('=== END ADDITIONAL FIELDS RECEIVED DATA ===');
   return (
     <div className={styles.additional_fields_grid_container}>
       <div className={styles.additional_fields_form_row}>
@@ -39,6 +35,9 @@ const AdditionalFields = ({
           authorizedByOptions={authorizedByOptions}
           errorClassName={styles.additional_fields_error}
           setFieldValue={setFieldValue}
+          isSubmitted={isSubmitted}
+          externalErrors={externalErrors}
+          onClearFieldError={onClearFieldError}
         />
       </div>
 
@@ -57,6 +56,9 @@ const AdditionalFields = ({
           authorizedByOptions={authorizedByOptions}
           errorClassName={styles.additional_fields_error}
           setFieldValue={setFieldValue}
+          isSubmitted={isSubmitted}
+          externalErrors={externalErrors}
+          onClearFieldError={onClearFieldError}
         />
 
         <FieldRenderer
@@ -73,6 +75,9 @@ const AdditionalFields = ({
           authorizedByOptions={authorizedByOptions}
           errorClassName={styles.additional_fields_error}
           setFieldValue={setFieldValue}
+          isSubmitted={isSubmitted}
+          externalErrors={externalErrors}
+          onClearFieldError={onClearFieldError}
         />
 
         <FieldRenderer
@@ -89,6 +94,9 @@ const AdditionalFields = ({
           authorizedByOptions={authorizedByOptions}
           errorClassName={styles.additional_fields_error}
           setFieldValue={setFieldValue}
+          isSubmitted={isSubmitted}
+          externalErrors={externalErrors}
+          onClearFieldError={onClearFieldError}
         />
       </div>
     </div>

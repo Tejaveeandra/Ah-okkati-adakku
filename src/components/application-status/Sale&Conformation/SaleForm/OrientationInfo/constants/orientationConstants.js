@@ -23,7 +23,7 @@ export const formFields = [
     label: "Branch Type",
     placeholder: "Select branch type",
     type: "dropdown",
-    required: true,
+    required: false,
     options: "branchTypeOptions"
   },
   {
@@ -32,7 +32,7 @@ export const formFields = [
     label: "City",
     placeholder: "Select City",
     type: "dropdown",
-    required: true,
+    required: false,
     options: "cityOptions"
   },
   {

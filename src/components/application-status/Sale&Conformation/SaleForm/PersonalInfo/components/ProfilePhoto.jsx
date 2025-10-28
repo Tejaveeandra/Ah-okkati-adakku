@@ -4,7 +4,7 @@ import { ReactComponent as UploadIcon } from "../../../../../../assets/applicati
 import FormError from "./FormError";
 import styles from "./ProfilePhoto.module.css";
 
-const ProfilePhoto = ({ touched, errors, viewOnly = false }) => {
+const ProfilePhoto = ({ touched, errors, viewOnly = false, isSubmitted }) => {
   const [profilePhotoPreview, setProfilePhotoPreview] = useState(null);
 
   return (
@@ -65,7 +65,8 @@ const ProfilePhoto = ({ touched, errors, viewOnly = false }) => {
                 touched={touched}
                 errors={errors}
                 className={styles.profile_photo_error}
-                showOnChange={true}
+                showOnChange={false}
+                isSubmitted={isSubmitted}
               />
             </>
           )}

@@ -4,7 +4,7 @@ import Dropdown from '../../../../../widgets/Dropdown/Dropdown';
 import { useOrientations, useBatches, useOrientationBatchComboDetails, useStates, useDistricts, useSchoolTypes, useFoodTypes, useBloodGroupTypes, useCastes, useReligions, useOrientationFee } from '../hooks/useConfirmationData';
 import styles from './AcademicInformation.module.css';
 
-const AcademicInformation = ({ profileData, onSuccess, category = 'COLLEGE' }) => {
+const AcademicInformation = ({ profileData, onSuccess, category = 'COLLEGE', externalErrors = {}, onClearFieldError }) => {
   // Debug logging for category
   console.log('🏫 AcademicInformation Category Debug:', {
     receivedCategory: category,
@@ -207,6 +207,12 @@ const AcademicInformation = ({ profileData, onSuccess, category = 'COLLEGE' }) =
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Clear external error if it exists
+    if (externalErrors[name] && onClearFieldError) {
+      onClearFieldError(name);
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -215,6 +221,11 @@ const AcademicInformation = ({ profileData, onSuccess, category = 'COLLEGE' }) =
 
   const handleDropdownChange = (e) => {
     const { name, value } = e.target;
+    
+    // Clear external error if it exists
+    if (externalErrors[name] && onClearFieldError) {
+      onClearFieldError(name);
+    }
     
     // Handle orientation selection - store both label and ID
     if (name === 'orientationName') {
@@ -340,6 +351,8 @@ const AcademicInformation = ({ profileData, onSuccess, category = 'COLLEGE' }) =
   // Update parent when form data changes (prevent infinite loop)
   useEffect(() => {
     if (onSuccess && Object.keys(formData).length > 0) {
+      console.log('🏫 Academic Information - Passing data to parent:', formData);
+      console.log('🏫 Orientation Name being passed:', formData.orientationName);
       onSuccess(formData);
     }
   }, [formData]);
@@ -521,27 +534,57 @@ const AcademicInformation = ({ profileData, onSuccess, category = 'COLLEGE' }) =
         {fields.map((field, index) => (
           <div key={field.name} className={styles.field_wrapper}>
             {field.type === 'input' ? (
-              <Inputbox
-                label={field.label}
-                id={field.name}
-                name={field.name}
-                placeholder={field.placeholder}
-                value={formData[field.name] || field.value || ''}
-                onChange={handleInputChange}
-                type={field.inputType || 'text'}
-              />
+              <>
+                <Inputbox
+                  label={field.label}
+                  id={field.name}
+                  name={field.name}
+                  placeholder={field.placeholder}
+                  value={formData[field.name] || field.value || ''}
+                  onChange={handleInputChange}
+                  type={field.inputType || 'text'}
+                />
+                {externalErrors[field.name] && (
+                  <div style={{ 
+                    color: '#dc2626', 
+                    fontSize: '12px', 
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    <span>⚠️</span>
+                    <span>{externalErrors[field.name]}</span>
+                  </div>
+                )}
+              </>
             ) : (
-              <Dropdown
-                dropdownname={field.label}
-                name={field.name}
-                results={field.options}
-                value={formData[field.name] || field.value || ''}
-                onChange={handleDropdownChange}
-                dropdownsearch={true}
-                disabled={field.loading}
-                loading={field.loading}
-                placeholder={field.loading ? "Loading..." : field.placeholder}
-              />
+              <>
+                <Dropdown
+                  dropdownname={field.label}
+                  name={field.name}
+                  results={field.options}
+                  value={formData[field.name] || field.value || ''}
+                  onChange={handleDropdownChange}
+                  dropdownsearch={true}
+                  disabled={field.loading}
+                  loading={field.loading}
+                  placeholder={field.loading ? "Loading..." : field.placeholder}
+                />
+                {externalErrors[field.name] && (
+                  <div style={{ 
+                    color: '#dc2626', 
+                    fontSize: '12px', 
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    <span>⚠️</span>
+                    <span>{externalErrors[field.name]}</span>
+                  </div>
+                )}
+              </>
             )}
           </div>
         ))}

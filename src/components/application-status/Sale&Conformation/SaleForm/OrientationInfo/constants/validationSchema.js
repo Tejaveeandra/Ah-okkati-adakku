@@ -13,13 +13,13 @@ export const validationSchema = Yup.object({
   branch: Yup.string()
     .required("Branch is required"),
   
-  // Branch Type - Required, auto-populated from API
+  // Branch Type - Optional, auto-populated from API
   branchType: Yup.string()
-    .required("Branch Type is required"),
+    .notRequired(),
   
-  // City - Required, auto-populated from API
+  // City - Optional, auto-populated from API
   city: Yup.string()
-    .required("City is required"),
+    .notRequired(),
   
   // Student Type - Required dropdown with filtering
   studentType: Yup.string()

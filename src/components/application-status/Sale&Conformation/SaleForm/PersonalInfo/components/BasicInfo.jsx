@@ -17,7 +17,10 @@ const BasicInfo = ({
   genderOptions,
   authorizedByOptions,
   formFields,
-  setFieldValue
+  setFieldValue,
+  isSubmitted,
+  externalErrors,
+  onClearFieldError
 }) => {
   // Helper function to get options based on field type
   const getOptions = (optionsKey) => {
@@ -40,6 +43,11 @@ const BasicInfo = ({
   // Custom handler for name fields to filter numbers and capitalize
   const handleNameFieldChange = (e) => {
     const { name, value } = e.target;
+    
+    // Clear external error for this field when user starts typing
+    if (onClearFieldError && externalErrors[name]) {
+      onClearFieldError(name);
+    }
     
     // Filter out numbers and special characters, only allow letters and spaces
     const filteredValue = value.replace(/[^A-Za-z\s]/g, '');
@@ -76,7 +84,13 @@ const BasicInfo = ({
                     id={field.id}
                     name={field.name}
                     value={values[field.name] || ""}
-                    onChange={handleChange}
+                    onChange={(e) => {
+                      // Clear external error for this field when user selects an option
+                      if (onClearFieldError && externalErrors[field.name]) {
+                        onClearFieldError(field.name);
+                      }
+                      handleChange(e);
+                    }}
                     results={stringOptions}
                     required={field.required}
                     disabled={false}
@@ -103,7 +117,9 @@ const BasicInfo = ({
               touched={touched}
               errors={errors}
               className={styles.basic_info_error}
-              showOnChange={true}
+              showOnChange={false}
+              isSubmitted={isSubmitted}
+              externalErrors={externalErrors}
             />
           </div>
         ))}

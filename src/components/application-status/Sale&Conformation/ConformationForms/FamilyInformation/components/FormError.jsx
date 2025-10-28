@@ -1,10 +1,14 @@
 import React from 'react';
 
-const FormError = ({ error, showOnChange = false, touched }) => {
+const FormError = ({ error, showOnChange = false, touched, externalErrors = {}, name }) => {
+  // Prioritize external errors over Formik errors
+  const errorMessage = externalErrors[name] || error;
+  
   // Show error if:
   // 1. showOnChange is true (immediate validation)
   // 2. OR showOnChange is false and field has been touched
-  const shouldShowError = showOnChange ? !!error : (touched && !!error);
+  // 3. OR external error exists (always show external errors)
+  const shouldShowError = externalErrors[name] ? true : (showOnChange ? !!errorMessage : (touched && !!errorMessage));
   
   if (!shouldShowError) return null;
 
@@ -18,7 +22,7 @@ const FormError = ({ error, showOnChange = false, touched }) => {
       gap: '4px'
     }}>
       <span>⚠️</span>
-      <span>{error}</span>
+      <span>{errorMessage}</span>
     </div>
   );
 };

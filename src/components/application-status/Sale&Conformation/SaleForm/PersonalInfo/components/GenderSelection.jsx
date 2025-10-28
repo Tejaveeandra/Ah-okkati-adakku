@@ -9,7 +9,10 @@ const GenderSelection = ({
   setFieldTouched, 
   touched, 
   errors,
-  genderOptions = [] // Receive gender options from parent
+  genderOptions = [], // Receive gender options from parent
+  isSubmitted,
+  externalErrors,
+  onClearFieldError
 }) => {
 
   return (
@@ -36,6 +39,10 @@ const GenderSelection = ({
                   values.gender === option.value ? styles.gender_selection_active : ""
                 }`} 
                 onClick={() => {
+                  // Clear external error for this field when user selects an option
+                  if (onClearFieldError && externalErrors.gender) {
+                    onClearFieldError('gender');
+                  }
                   setFieldValue("gender", option.value);
                   setFieldTouched("gender", true);
                 }}
@@ -52,7 +59,9 @@ const GenderSelection = ({
           touched={touched}
           errors={errors}
           className={styles.gender_selection_error}
-          showOnChange={true}
+          showOnChange={false}
+          isSubmitted={isSubmitted}
+          externalErrors={externalErrors}
         />
       </div>
     </div>

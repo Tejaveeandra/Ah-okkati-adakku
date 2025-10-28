@@ -10,14 +10,11 @@ const ParentInfo = ({
   admissionReferredByOptions,
   quotaOptions,
   formFields,
-  setFieldValue
+  setFieldValue,
+  isSubmitted,
+  externalErrors,
+  onClearFieldError
 }) => {
-  console.log('=== PARENT INFORMATION DEBUG ===');
-  console.log('Parent Information values:', values);
-  console.log('Father Name:', values.fatherName);
-  console.log('Phone Number:', values.phoneNumber);
-  console.log('Parent fields being rendered:', formFields.slice(9, 11));
-  console.log('=== END PARENT INFORMATION DEBUG ===');
   return (
     <div className={styles.parent_info_grid_container}>
       {/* Parent Information Section Title */}
@@ -41,6 +38,9 @@ const ParentInfo = ({
           quotaOptions={quotaOptions}
           errorClassName={styles.parent_info_error}
           setFieldValue={setFieldValue}
+          isSubmitted={isSubmitted}
+          externalErrors={externalErrors}
+          onClearFieldError={onClearFieldError}
         />
 
         {/* Empty field for grid alignment */}

@@ -12,7 +12,7 @@ import AdditionalFields from "./components/AdditionalFields";
 import ParentInfo from "./components/ParentInfo";
 import styles from "./PersonalInformation.module.css";
 
-const PersonalInformation = ({ onSuccess }) => {
+const PersonalInformation = ({ onSuccess, externalErrors = {}, onClearFieldError }) => {
   const { isSubmitting, error, handleSubmit } = usePersonalInfoSubmission();
   const { 
     quotaOptions, 
@@ -26,6 +26,8 @@ const PersonalInformation = ({ onSuccess }) => {
 
   // Track previous values to detect changes
   const [previousValues, setPreviousValues] = useState(initialValues);
+  // Track if form has been submitted to show validation errors
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   // Custom validation function for conditional fields
   const customValidate = (values) => {
@@ -61,34 +63,18 @@ const PersonalInformation = ({ onSuccess }) => {
     // Check if values have actually changed
     const hasChanged = JSON.stringify(values) !== JSON.stringify(previousValues);
     if (hasChanged && onSuccess) {
-      console.log('🔄 PersonalInformation values changed:', values);
-      console.log('🔄 Key fields:', {
-        gender: values.gender,
-        quota: values.quota,
-        admissionType: values.admissionType,
-        admissionReferredBy: values.admissionReferredBy
-      });
       onSuccess(values);
       setPreviousValues(values);
     }
   };
 
-  console.log('=== PERSONAL INFORMATION RECEIVED DATA ===');
-  console.log('Received quotaOptions:', quotaOptions.length, 'items');
-  console.log('Received admissionReferredByOptions:', admissionReferredByOptions.length, 'items');
-  console.log('Received admissionTypeOptions:', admissionTypeOptions.length, 'items');
-  console.log('Received genderOptions:', genderOptions.length, 'items');
-  console.log('Received authorizedByOptions:', authorizedByOptions.length, 'items');
-  console.log('=== END PERSONAL INFORMATION RECEIVED DATA ===');
-
-
   // Handle form submission with API integration
   const onSubmit = async (values, { setSubmitting }) => {
-    console.log('🔄 PersonalInformation onSubmit called with values:', values);
+    // Set submitted state to show validation errors
+    setIsSubmitted(true);
     
     try {
       // Just validate and pass data to parent (matching existing pattern)
-      console.log('🔄 PersonalInformation calling onSuccess with:', values);
       if (onSuccess) {
         onSuccess(values);
       }
@@ -104,7 +90,7 @@ const PersonalInformation = ({ onSuccess }) => {
 
   // Show error state if dropdown data fails to load (but still render the form)
   if (dropdownError) {
-    console.warn('Dropdown data failed to load:', dropdownError);
+    // Dropdown data failed to load, but continue rendering the form
   }
 
   return (
@@ -112,8 +98,9 @@ const PersonalInformation = ({ onSuccess }) => {
       initialValues={initialValues}
       validationSchema={validationSchema}
       validate={customValidate}
-      validateOnBlur={true}
-      validateOnChange={true}
+      validateOnBlur={false}
+      validateOnChange={false}
+      validateOnSubmit={true}
       onSubmit={onSubmit}
     >
       {({ values, errors, touched, setFieldValue, setFieldTouched, handleChange, handleBlur }) => {
@@ -154,6 +141,9 @@ const PersonalInformation = ({ onSuccess }) => {
                 authorizedByOptions={authorizedByOptions}
                 formFields={formFields}
                 setFieldValue={setFieldValue}
+                isSubmitted={isSubmitted}
+                externalErrors={externalErrors}
+                onClearFieldError={onClearFieldError}
               />
 
               {/* DOWN DIV - Gender and Aapar No */}
@@ -167,6 +157,9 @@ const PersonalInformation = ({ onSuccess }) => {
                 setFieldTouched={setFieldTouched}
                 formFields={formFields}
                 genderOptions={genderOptions}
+                isSubmitted={isSubmitted}
+                externalErrors={externalErrors}
+                onClearFieldError={onClearFieldError}
               />
       </div>
       
@@ -175,6 +168,7 @@ const PersonalInformation = ({ onSuccess }) => {
               <ProfilePhoto
                 touched={touched}
                 errors={errors}
+                isSubmitted={isSubmitted}
               />
             </div>
           </div>
@@ -193,6 +187,9 @@ const PersonalInformation = ({ onSuccess }) => {
             authorizedByOptions={authorizedByOptions}
             formFields={formFields}
             setFieldValue={setFieldValue}
+            isSubmitted={isSubmitted}
+            externalErrors={externalErrors}
+            onClearFieldError={onClearFieldError}
           />
 
           {/* Parent Information */}
@@ -206,6 +203,9 @@ const PersonalInformation = ({ onSuccess }) => {
             quotaOptions={quotaOptions}
             formFields={formFields}
             setFieldValue={setFieldValue}
+            isSubmitted={isSubmitted}
+            externalErrors={externalErrors}
+            onClearFieldError={onClearFieldError}
           />
         </Form>
         );

@@ -11,7 +11,7 @@ import FormError from "./components/FormError";
 import Snackbar from "../../../../../widgets/Snackbar/Snackbar";
 import styles from "./FamilyInformation.module.css";
 
-const FamilyInformation = ({ formData = {}, onSuccess }) => {
+const FamilyInformation = ({ formData = {}, onSuccess, externalErrors = {}, onClearFieldError }) => {
   
   // Fetch sectors and occupations data using custom hooks
   const { sectors, loading: sectorsLoading, error: sectorsError } = useSectors();
@@ -99,6 +99,11 @@ const FamilyInformation = ({ formData = {}, onSuccess }) => {
   const handleChange = (e, setFieldValue, values) => {
     const { name, value } = e.target;
     
+    // Clear external error if it exists
+    if (externalErrors[name] && onClearFieldError) {
+      onClearFieldError(name);
+    }
+    
     // Capitalize name fields
     const nameFields = ["fatherName", "motherName"];
     const processedValue = nameFields.includes(name) ? capitalizeWords(value) : value;
@@ -124,6 +129,12 @@ const FamilyInformation = ({ formData = {}, onSuccess }) => {
   // Handle name field changes with filtering
   const handleNameFieldChange = (e, setFieldValue) => {
     const { name, value } = e.target;
+    
+    // Clear external error if it exists
+    if (externalErrors[name] && onClearFieldError) {
+      onClearFieldError(name);
+    }
+    
     // Filter out numbers and special characters, keep only letters and spaces
     const filteredValue = value.replace(/[^a-zA-Z\s]/g, '');
     const capitalizedValue = capitalizeWords(filteredValue);
@@ -133,6 +144,12 @@ const FamilyInformation = ({ formData = {}, onSuccess }) => {
   // Handle phone number changes with filtering
   const handlePhoneFieldChange = (e, setFieldValue) => {
     const { name, value } = e.target;
+    
+    // Clear external error if it exists
+    if (externalErrors[name] && onClearFieldError) {
+      onClearFieldError(name);
+    }
+    
     // Filter out non-numeric characters and limit to 10 digits
     const filteredValue = value.replace(/[^0-9]/g, '').slice(0, 10);
     setFieldValue(name, filteredValue);
@@ -141,12 +158,24 @@ const FamilyInformation = ({ formData = {}, onSuccess }) => {
   // Handle email field changes
   const handleEmailFieldChange = (e, setFieldValue) => {
     const { name, value } = e.target;
+    
+    // Clear external error if it exists
+    if (externalErrors[name] && onClearFieldError) {
+      onClearFieldError(name);
+    }
+    
     setFieldValue(name, value);
   };
 
   // Handle other occupation field changes
   const handleOtherOccupationChange = (e, setFieldValue) => {
     const { name, value } = e.target;
+    
+    // Clear external error if it exists
+    if (externalErrors[name] && onClearFieldError) {
+      onClearFieldError(name);
+    }
+    
     // Filter out special characters, keep letters, numbers, spaces, and common punctuation
     const filteredValue = value.replace(/[^a-zA-Z0-9\s\-.,]/g, '');
     setFieldValue(name, filteredValue);
@@ -185,7 +214,7 @@ const FamilyInformation = ({ formData = {}, onSuccess }) => {
         validationSchema={validationSchema}
         validate={customValidate}
         validateOnBlur={true}
-        validateOnChange={true}
+        validateOnChange={false}
         onSubmit={(values) => {
           console.log('Family Information form submitted:', values);
           // Call onSuccess with the form values
@@ -237,7 +266,8 @@ const FamilyInformation = ({ formData = {}, onSuccess }) => {
                           <FormError 
                             error={errors[field.name]} 
                             touched={touched[field.name]} 
-                            showOnChange={true} 
+                            externalErrors={externalErrors}
+                            name={field.name}
                           />
                         </div>
                       ) : field.name === "fatherEmail" ? (
@@ -257,7 +287,8 @@ const FamilyInformation = ({ formData = {}, onSuccess }) => {
                           <FormError 
                             error={errors[field.name]} 
                             touched={touched[field.name]} 
-                            showOnChange={true} 
+                            externalErrors={externalErrors}
+                            name={field.name}
                           />
                         </div>
                       ) : field.type === "dropdown" ? (
@@ -282,7 +313,8 @@ const FamilyInformation = ({ formData = {}, onSuccess }) => {
                           <FormError 
                             error={errors[field.name]} 
                             touched={touched[field.name]} 
-                            showOnChange={true} 
+                            externalErrors={externalErrors}
+                            name={field.name}
                           />
                         </div>
                       ) : field.name === "fatherName" ? (
@@ -301,7 +333,8 @@ const FamilyInformation = ({ formData = {}, onSuccess }) => {
                           <FormError 
                             error={errors[field.name]} 
                             touched={touched[field.name]} 
-                            showOnChange={true} 
+                            externalErrors={externalErrors}
+                            name={field.name}
                           />
                         </div>
                       ) : field.name === "fatherOtherOccupation" ? (
@@ -320,7 +353,8 @@ const FamilyInformation = ({ formData = {}, onSuccess }) => {
                           <FormError 
                             error={errors[field.name]} 
                             touched={touched[field.name]} 
-                            showOnChange={true} 
+                            externalErrors={externalErrors}
+                            name={field.name}
                           />
                         </div>
                       ) : (
@@ -339,7 +373,8 @@ const FamilyInformation = ({ formData = {}, onSuccess }) => {
                           <FormError 
                             error={errors[field.name]} 
                             touched={touched[field.name]} 
-                            showOnChange={true} 
+                            externalErrors={externalErrors}
+                            name={field.name}
                           />
                         </div>
                       )}
@@ -386,7 +421,8 @@ const FamilyInformation = ({ formData = {}, onSuccess }) => {
                           <FormError 
                             error={errors[field.name]} 
                             touched={touched[field.name]} 
-                            showOnChange={true} 
+                            externalErrors={externalErrors}
+                            name={field.name}
                           />
                         </div>
                       ) : field.name === "motherEmail" ? (
@@ -406,7 +442,8 @@ const FamilyInformation = ({ formData = {}, onSuccess }) => {
                           <FormError 
                             error={errors[field.name]} 
                             touched={touched[field.name]} 
-                            showOnChange={true} 
+                            externalErrors={externalErrors}
+                            name={field.name}
                           />
                         </div>
                       ) : field.type === "dropdown" ? (
@@ -431,7 +468,8 @@ const FamilyInformation = ({ formData = {}, onSuccess }) => {
                           <FormError 
                             error={errors[field.name]} 
                             touched={touched[field.name]} 
-                            showOnChange={true} 
+                            externalErrors={externalErrors}
+                            name={field.name}
                           />
                         </div>
                       ) : field.name === "motherName" ? (
@@ -450,7 +488,8 @@ const FamilyInformation = ({ formData = {}, onSuccess }) => {
                           <FormError 
                             error={errors[field.name]} 
                             touched={touched[field.name]} 
-                            showOnChange={true} 
+                            externalErrors={externalErrors}
+                            name={field.name}
                           />
                         </div>
                       ) : field.name === "motherOtherOccupation" ? (
@@ -469,7 +508,8 @@ const FamilyInformation = ({ formData = {}, onSuccess }) => {
                           <FormError 
                             error={errors[field.name]} 
                             touched={touched[field.name]} 
-                            showOnChange={true} 
+                            externalErrors={externalErrors}
+                            name={field.name}
                           />
                         </div>
                       ) : (
@@ -488,7 +528,8 @@ const FamilyInformation = ({ formData = {}, onSuccess }) => {
                           <FormError 
                             error={errors[field.name]} 
                             touched={touched[field.name]} 
-                            showOnChange={true} 
+                            externalErrors={externalErrors}
+                            name={field.name}
                           />
                         </div>
                       )}

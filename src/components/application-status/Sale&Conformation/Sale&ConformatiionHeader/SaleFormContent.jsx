@@ -5,10 +5,18 @@ import ProgressHeader from '../../../../widgets/ProgressHeader/ProgressHeader';
 import backButton from '../../../../assets/application-status/BakArrow.svg';
 import styles from './SaleFormContent.module.css';
 
-const SaleFormContent = ({ status, onBack, initialData = {}, showSuccess = false, showConfirmation = false, currentStep = 1 }) => {
+const SaleFormContent = ({ status, onBack, initialData = {}, showSuccess = false, showConfirmation = false, currentStep = 1, onStatusHeaderDataFetched }) => {
   const navigate = useNavigate();
   const { applicationNo } = useParams();
   const location = useLocation();
+  
+  console.log('🏗️ ===== SALE FORM CONTENT RENDERED ===== 🏗️');
+  console.log('🏗️ applicationNo from useParams:', applicationNo);
+  console.log('🏗️ applicationNo type:', typeof applicationNo);
+  console.log('🏗️ status:', status);
+  console.log('🏗️ showSuccess:', showSuccess);
+  console.log('🏗️ showConfirmation:', showConfirmation);
+  
   const locationInitialValues = (location && location.state && location.state.initialValues) ? location.state.initialValues : {};
   
   const [persistentData, setPersistentData] = useState({ campus: "", zone: "" });
@@ -84,7 +92,10 @@ const SaleFormContent = ({ status, onBack, initialData = {}, showSuccess = false
             applicationNo={applicationNo || ""}
             campusName={headerCampus}
             zoneName={headerZone}
+            academicYear={locationInitialValues.academicYear || ""}
+            applicationFee={locationInitialValues.applicationFee || ""}
             category={category}
+            onDataFetched={onStatusHeaderDataFetched}
           />
         </div>
        

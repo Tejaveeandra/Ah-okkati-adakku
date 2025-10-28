@@ -13,11 +13,19 @@ const DownSection = ({
   setFieldValue,
   setFieldTouched,
   formFields,
-  genderOptions
+  genderOptions,
+  isSubmitted,
+  externalErrors,
+  onClearFieldError
 }) => {
   // Custom handler for number-only fields
   const handleNumberFieldChange = (e) => {
     const { name, value } = e.target;
+    
+    // Clear external error for this field when user starts typing
+    if (onClearFieldError && externalErrors[name]) {
+      onClearFieldError(name);
+    }
     
     // Filter out everything except numbers
     const filteredValue = value.replace(/[^0-9]/g, '');
@@ -47,6 +55,9 @@ const DownSection = ({
           touched={touched}
           errors={errors}
           genderOptions={genderOptions}
+          isSubmitted={isSubmitted}
+          externalErrors={externalErrors}
+          onClearFieldError={onClearFieldError}
         />
         <div className={styles.down_section_form_field}>
           {(() => {
@@ -75,7 +86,9 @@ const DownSection = ({
             touched={touched}
             errors={errors}
             className={styles.down_section_error}
-            showOnChange={true}
+            showOnChange={false}
+            isSubmitted={isSubmitted}
+            externalErrors={externalErrors}
           />
         </div>
       </div>

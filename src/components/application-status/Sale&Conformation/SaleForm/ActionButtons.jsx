@@ -7,7 +7,7 @@ import PaymentModal from './Paymentinfo/PaymentModal';
 import { validateAllForms, getMissingFieldsMessage } from './utils/comprehensiveValidation';
 import styles from './ActionButtons.module.css';
 
-const ActionButtons = ({ onPaymentSuccess, onSaleAndConform, onSubmitCompleteSale, onSubmitSaleOnly, isSubmitting, formData, onPaymentInfoSuccess }) => {
+const ActionButtons = ({ onPaymentSuccess, onSaleAndConform, onSubmitCompleteSale, onSubmitSaleOnly, isSubmitting, formData, onPaymentInfoSuccess, onFieldWiseErrors, onClearFieldWiseErrors, onValidateOrientation, category = 'COLLEGE' }) => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -31,27 +31,47 @@ const ActionButtons = ({ onPaymentSuccess, onSaleAndConform, onSubmitCompleteSal
   };
 
   const handleProceedToSale = async () => {
-    console.log('Proceed to Sale clicked - validating all forms...');
+    console.log('Proceed to Sale clicked - validating Step 1 forms...');
     console.log('Current form data:', formData);
     console.log('Form data keys:', Object.keys(formData));
     console.log('Form data values:', Object.values(formData));
     
     try {
-      // Validate all forms comprehensively
-      const validationResult = await validateAllForms(formData);
+      // Validate all forms comprehensively (excluding orientation fields)
+      const validationResult = await validateAllForms(formData, 1, category);
       
-      console.log('Validation result:', validationResult);
+      // Validate orientation fields locally using Formik
+      let orientationErrors = {};
+      if (onValidateOrientation) {
+        orientationErrors = await onValidateOrientation();
+        console.log('Orientation validation errors:', orientationErrors);
+      }
       
-      if (validationResult.isValid) {
-        console.log('✅ All forms validated successfully - opening payment modal');
+      // Combine all errors
+      const allErrors = { ...validationResult.errors, ...orientationErrors };
+      const isValid = validationResult.isValid && Object.keys(orientationErrors).length === 0;
+      
+      console.log('Combined validation result:', { isValid, allErrors });
+      
+      if (isValid) {
+        console.log('✅ All Step 1 forms validated successfully - opening payment modal');
         showSnackbar('All forms validated successfully! Opening payment modal...', 'success');
+        // Clear any existing field-wise errors
+        if (onClearFieldWiseErrors) {
+          onClearFieldWiseErrors();
+        }
         setIsPaymentModalOpen(true);
       } else {
-        console.log('❌ Form validation failed:', validationResult.errors);
-        const errorMessage = getMissingFieldsMessage(validationResult.errors);
+        console.log('❌ Step 1 form validation failed:', allErrors);
+        const errorMessage = getMissingFieldsMessage(allErrors);
+        
+        // Set field-wise errors for display
+        if (onFieldWiseErrors) {
+          onFieldWiseErrors(allErrors);
+        }
         
         // Show user-friendly error message using Snackbar
-        showSnackbar(`Please complete all required fields before proceeding to payment. Missing: ${errorMessage}`, 'error');
+        showSnackbar(`Please complete all required fields before proceeding to sale. Missing: ${errorMessage}`, 'error');
       }
     } catch (error) {
       console.error('Validation error:', error);
@@ -69,6 +89,18 @@ const ActionButtons = ({ onPaymentSuccess, onSaleAndConform, onSubmitCompleteSal
     
     if (missingFields.length > 0) {
       const errorMessage = `Please complete all form sections before proceeding. Missing: ${missingFields.join(', ')}`;
+      
+      // Create field-wise errors for missing fields
+      const fieldErrors = {};
+      missingFields.forEach(field => {
+        fieldErrors[field] = `${field} is required`;
+      });
+      
+      // Set field-wise errors for display
+      if (onFieldWiseErrors) {
+        onFieldWiseErrors(fieldErrors);
+      }
+      
       showSnackbar(errorMessage, 'error');
       return;
     }
@@ -107,21 +139,6 @@ const ActionButtons = ({ onPaymentSuccess, onSaleAndConform, onSubmitCompleteSal
 
   return (
     <div className={styles.action_buttons_container}>
-      <Button
-        buttonname="Show Data"
-        onClick={() => {
-          console.log('🔍 === MANUAL DATA DISPLAY === 🔍');
-          console.log('📊 Current Single Object:', formData);
-          console.log('📋 Object Keys:', Object.keys(formData));
-          console.log('📋 Object Values:', Object.values(formData));
-          console.log('📊 Object Size:', Object.keys(formData).length, 'fields');
-          console.log('🎯 === END MANUAL DATA DISPLAY === 🎯');
-        }}
-        variant="secondary"
-        width="auto"
-        type="button"
-      />
-      
       <Button
         buttonname="Proceed to Sale"
         righticon={

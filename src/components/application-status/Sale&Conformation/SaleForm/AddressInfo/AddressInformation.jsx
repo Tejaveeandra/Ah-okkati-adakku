@@ -72,6 +72,7 @@ const AddressInformation = ({ onSuccess, externalErrors = {}, onClearFieldError 
 
         return (
         <Form>
+
           {/* Global Error Display */}
           {error && (
             <div className={styles.global_error}>

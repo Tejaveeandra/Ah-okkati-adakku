@@ -10,12 +10,7 @@ const SaleFormContent = ({ status, onBack, initialData = {}, showSuccess = false
   const { applicationNo } = useParams();
   const location = useLocation();
   
-  console.log('🏗️ ===== SALE FORM CONTENT RENDERED ===== 🏗️');
-  console.log('🏗️ applicationNo from useParams:', applicationNo);
-  console.log('🏗️ applicationNo type:', typeof applicationNo);
-  console.log('🏗️ status:', status);
-  console.log('🏗️ showSuccess:', showSuccess);
-  console.log('🏗️ showConfirmation:', showConfirmation);
+  console.log('🏗️ SaleFormContent Render - Status:', status, 'ShowConfirmation:', showConfirmation);
   
   const locationInitialValues = (location && location.state && location.state.initialValues) ? location.state.initialValues : {};
   

@@ -8,7 +8,8 @@ const ApplicationStatusContent = ({
   filteredData,
   pageIndex,
   setPageIndex,
-  handleCardClick
+  handleCardClick,
+  setData
 }) => {
   if (search) {
     return filteredData.length === 0 ? (
@@ -37,6 +38,7 @@ const ApplicationStatusContent = ({
       filteredData={filteredData}
       pageIndex={pageIndex}
       setPageIndex={setPageIndex}
+      setData={setData}
     />
   );
 };

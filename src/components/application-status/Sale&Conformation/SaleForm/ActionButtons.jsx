@@ -31,30 +31,21 @@ const ActionButtons = ({ onPaymentSuccess, onSaleAndConform, onSubmitCompleteSal
   };
 
   const handleProceedToSale = async () => {
-    console.log('Proceed to Sale clicked - validating Step 1 forms...');
-    console.log('Current form data:', formData);
-    console.log('Form data keys:', Object.keys(formData));
-    console.log('Form data values:', Object.values(formData));
-    
     try {
       // Validate all forms comprehensively (excluding orientation fields)
       const validationResult = await validateAllForms(formData, 1, category);
       
       // Validate orientation fields locally using Formik
       let orientationErrors = {};
-      if (onValidateOrientation) {
+      if (onValidateOrientation && typeof onValidateOrientation === 'function') {
         orientationErrors = await onValidateOrientation();
-        console.log('Orientation validation errors:', orientationErrors);
       }
       
       // Combine all errors
       const allErrors = { ...validationResult.errors, ...orientationErrors };
       const isValid = validationResult.isValid && Object.keys(orientationErrors).length === 0;
       
-      console.log('Combined validation result:', { isValid, allErrors });
-      
       if (isValid) {
-        console.log('✅ All Step 1 forms validated successfully - opening payment modal');
         showSnackbar('All forms validated successfully! Opening payment modal...', 'success');
         // Clear any existing field-wise errors
         if (onClearFieldWiseErrors) {
@@ -62,7 +53,6 @@ const ActionButtons = ({ onPaymentSuccess, onSaleAndConform, onSubmitCompleteSal
         }
         setIsPaymentModalOpen(true);
       } else {
-        console.log('❌ Step 1 form validation failed:', allErrors);
         const errorMessage = getMissingFieldsMessage(allErrors);
         
         // Set field-wise errors for display
@@ -80,15 +70,23 @@ const ActionButtons = ({ onPaymentSuccess, onSaleAndConform, onSubmitCompleteSal
   };
 
   const handleSaleAndConform = async () => {
+    console.log('🔄 ===== ACTION BUTTONS: SALE & CONFORM CLICKED =====');
     console.log('Sale & Conform clicked');
     console.log('Current form data before submission:', formData);
+    console.log('Form data keys:', Object.keys(formData));
+    console.log('Form data values:', Object.values(formData));
+    console.log('Timestamp:', new Date().toISOString());
     
     // Check if all required form data is available (excluding payment fields)
     const requiredFields = ['firstName', 'academicYear', 'doorNo'];
     const missingFields = requiredFields.filter(field => !formData[field]);
     
+    console.log('Required fields:', requiredFields);
+    console.log('Missing fields:', missingFields);
+    
     if (missingFields.length > 0) {
       const errorMessage = `Please complete all form sections before proceeding. Missing: ${missingFields.join(', ')}`;
+      console.log('❌ Validation failed:', errorMessage);
       
       // Create field-wise errors for missing fields
       const fieldErrors = {};
@@ -105,14 +103,27 @@ const ActionButtons = ({ onPaymentSuccess, onSaleAndConform, onSubmitCompleteSal
       return;
     }
     
+    console.log('✅ Validation passed, proceeding with submission');
+    
     // Submit sale-only form (without payment data) - don't show success page
     if (onSubmitSaleOnly) {
+      console.log('🔄 Calling onSubmitSaleOnly...');
       const result = await onSubmitSaleOnly(null, false); // Pass false to not show success page
+      console.log('🔄 onSubmitSaleOnly result:', result);
+      
       if (result && result.success) {
+        console.log('✅ Data submission successful, calling onSaleAndConform...');
         if (onSaleAndConform) {
           onSaleAndConform();
+          console.log('🔄 ===== NAVIGATION CALLED FROM ACTION BUTTONS =====');
+        } else {
+          console.log('❌ onSaleAndConform function not provided');
         }
+      } else {
+        console.log('❌ Data submission failed:', result);
       }
+    } else {
+      console.log('❌ onSubmitSaleOnly function not provided');
     }
   };
 
@@ -139,6 +150,8 @@ const ActionButtons = ({ onPaymentSuccess, onSaleAndConform, onSubmitCompleteSal
 
   return (
     <div className={styles.action_buttons_container}>
+      {/* Debug Box for ActionButtons */}
+
       <Button
         buttonname="Proceed to Sale"
         righticon={

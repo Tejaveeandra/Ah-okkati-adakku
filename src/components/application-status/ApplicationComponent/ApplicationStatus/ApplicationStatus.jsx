@@ -9,6 +9,8 @@ import { useApplicationNavigation } from "./hooks/useApplicationNavigation";
 import { useApplicationUI } from "./hooks/useApplicationUI";
  
 const ApplicationStatus = () => {
+  console.log('🔄 ApplicationStatus component rendered');
+  
   // Custom hooks for different concerns
   const {
     showFilter,
@@ -23,7 +25,7 @@ const ApplicationStatus = () => {
     setPageIndex
   } = useApplicationUI();
   
-  const { data, loading, error } = useApplicationData(selectedCampus);
+  const { data, setData, loading, error } = useApplicationData(selectedCampus);
   const { search, handleSearchChange } = useApplicationSearch();
   const { handleCardClick } = useApplicationNavigation();
   
@@ -40,6 +42,23 @@ const ApplicationStatus = () => {
       setPageIndex(0);
     }
   }, [filteredData, pageIndex, setPageIndex]);
+
+  // Debug: Track component mount and data changes
+  useEffect(() => {
+    console.log('🔄 ApplicationStatus mounted/updated');
+    console.log('🔄 selectedCampus:', selectedCampus);
+    console.log('🔄 data length:', data.length);
+    console.log('🔄 loading:', loading);
+    console.log('🔄 error:', error);
+  }, [selectedCampus, data.length, loading, error]);
+
+  // Debug: Track component mount/unmount
+  useEffect(() => {
+    console.log('🔄 ApplicationStatus component mounted');
+    return () => {
+      console.log('🔄 ApplicationStatus component unmounted');
+    };
+  }, []);
  
  
   if (loading) return <div>Loading applications...</div>;
@@ -77,6 +96,7 @@ const ApplicationStatus = () => {
           setSelectedCampus={setSelectedCampus}
           studentCategory={studentCategory}
           setStudentCategory={setStudentCategory}
+          data={data} // Pass data to header for export functionality
         />
      
         <ApplicationStatusContent
@@ -85,6 +105,7 @@ const ApplicationStatus = () => {
           pageIndex={pageIndex}
           setPageIndex={setPageIndex}
           handleCardClick={handleCardClick}
+          setData={setData}
         />
       </div>
     </div>

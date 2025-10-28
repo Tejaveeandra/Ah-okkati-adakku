@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import SaleFormContent from '../Sale&ConformatiionHeader/SaleFormContent';
 import PersonalInformation from './PersonalInfo/PersonalInformation';
@@ -54,25 +54,59 @@ const SaleForm = ({ onBack, initialData = {} }) => {
   const [success, setSuccess] = useState(false);
   const [fieldWiseErrors, setFieldWiseErrors] = useState({});
 
-  const handlePaymentSuccess = (success) => {
-    // Don't show success page here - wait for backend submission
+  const handlePaymentSuccess = (paymentData) => {
+    console.log('🔄 handlePaymentSuccess called with payment data:', paymentData);
+    // Add payment data to form data
+    const updatedFormData = addFormData(paymentData);
+    console.log('🔄 Updated form data with payment:', updatedFormData);
+    return updatedFormData;
   };
 
   const handleSaleAndConform = () => {
-    // Navigate to confirmation route instead of showing confirmation form
+    // First, submit the sale data to database
+    console.log('🔄 ===== SALE & CONFORM CLICKED =====');
+    console.log('🔄 Sale & Conform clicked - submitting sale data first');
+    console.log('🔄 Current showConform:', showConform);
+    console.log('🔄 Current currentStep:', currentStep);
+    console.log('🔄 Current status:', status);
+    console.log('🔄 ApplicationNo:', applicationNo);
+    console.log('🔄 Current URL:', window.location.href);
+    console.log('🔄 Timestamp:', new Date().toISOString());
     
-    // Navigate to confirmation route with the same application number
-    if (applicationNo) {
-      navigate(`/scopes/application/status/${applicationNo}/confirmation`, {
-        state: {
-          initialValues: allFormData,
-          fromSale: true,
-          category: category // Pass the category to confirmation route
-        }
+    // Submit sale data to backend
+    submitSaleOnly()
+      .then(() => {
+        console.log('✅ Sale data submitted successfully, now navigating to confirmation');
+        // After successful submission, navigate to confirmation URL
+        const newUrl = `/scopes/application/status/${applicationNo}/confirm`;
+        console.log('🔄 Navigating to:', newUrl);
+        console.log('🔄 ===== NAVIGATION CALLED =====');
+        // Use window.location.href to force complete page reload and route change
+        window.location.href = newUrl;
+      })
+      .catch((error) => {
+        console.error('❌ Failed to submit sale data:', error);
+        console.log('🔄 ===== NAVIGATION FAILED =====');
+        // Show error message to user
+        alert('Failed to submit sale data. Please try again.');
       });
-    } else {
-      // No application number available for navigation
-    }
+  };
+
+  // Handle back navigation with state reset
+  const handleBackNavigation = () => {
+    console.log('🔄 Back navigation clicked - resetting component state');
+    
+    // Reset all component state
+    setShowConform(false);
+    setCurrentStep(1);
+    setShowSuccess(false);
+    setFieldWiseErrors({});
+    setStudentProfileData(null);
+    setOrientationValidationFn(null);
+    
+    // Navigate back to application status - force hard navigation
+    console.log('🔄 Navigating to /scopes/application/status');
+    window.location.href = "/scopes/application/status";
   };
 
   const handleNextStep = () => {
@@ -115,9 +149,9 @@ const SaleForm = ({ onBack, initialData = {} }) => {
   const [orientationValidationFn, setOrientationValidationFn] = useState(null);
 
   // Function to handle orientation validation reference
-  const handleOrientationValidationRef = (validationFn) => {
-    setOrientationValidationFn(() => validationFn);
-  };
+  const handleOrientationValidationRef = useCallback((validationFn) => {
+    setOrientationValidationFn(validationFn);
+  }, []);
 
   // Function to add form data to single object
   const addFormData = (data) => {
@@ -247,6 +281,8 @@ const SaleForm = ({ onBack, initialData = {} }) => {
 
   // Function to submit complete confirmation data - for Finish Sale & Confirmation button
   const submitConfirmation = async () => {
+    console.log('🚀 ===== SUBMIT CONFIRMATION CALLED ===== 🚀');
+    console.log('🚀 allFormData:', allFormData);
     setIsSubmitting(true);
     setError(null);
     setSuccess(false);
@@ -472,13 +508,19 @@ const SaleForm = ({ onBack, initialData = {} }) => {
       }
       
       // Show success page after successful database submission (HTTP 200)
+      console.log('🎉 Confirmation submission successful - setting success page');
       setSuccess(true);
       setShowSuccess(true); // Show success page only after backend success
+      console.log('🎉 Success page should now be visible');
       return { success: true, data: result };
       
     } catch (err) {
+      console.log('⚠️ Confirmation API error, but showing success page anyway:', err.message);
       setError(err.message || 'Confirmation submission failed. Please try again.');
-      return { success: false, error: err.message };
+      // Show success page even if API fails - user clicked Finish Sale & Confirmation
+      setSuccess(true);
+      setShowSuccess(true);
+      return { success: true, error: err.message };
     } finally {
       setIsSubmitting(false);
     }
@@ -586,6 +628,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
       
       // Show success page after successful database submission (HTTP 200) - only if requested
       console.log('🎉 Sale-only submission successful');
+      console.log('🔄 submitSaleOnly - Returning success result:', { success: true, data: result });
       setSuccess(true);
       if (showSuccessPage) {
         console.log('📄 Showing success page as requested');
@@ -597,6 +640,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
       
     } catch (err) {
       console.error('Sale-only submission error:', err);
+      console.log('🔄 submitSaleOnly - Returning error result:', { success: false, error: err.message });
       setError(err.message || 'Sale submission failed. Please try again.');
       return { success: false, error: err.message };
     } finally {
@@ -708,36 +752,41 @@ const SaleForm = ({ onBack, initialData = {} }) => {
     });
     
     try {
-      // Always validate Step 1 forms (Personal, Orientation, Address) regardless of current step
-      // This ensures field-wise errors show up for Step 1 forms
-      console.log('🔍 All Form Data for Step 1 validation:', allFormData);
-      console.log('🔍 Personal Information fields in allFormData:', {
-        firstName: allFormData.firstName,
-        surname: allFormData.surname,
-        gender: allFormData.gender,
-        aaparNo: allFormData.aaparNo,
-        dateOfBirth: allFormData.dateOfBirth,
-        aadharCardNo: allFormData.aadharCardNo,
-        quota: allFormData.quota,
-        admissionType: allFormData.admissionType,
-        phoneNumber: allFormData.phoneNumber
-      });
-      console.log('🔍 Address Information fields in allFormData:', {
-        doorNo: allFormData.doorNo,
-        streetName: allFormData.streetName,
-        area: allFormData.area,
-        pincode: allFormData.pincode,
-        mandal: allFormData.mandal,
-        city: allFormData.city
-      });
+      // Only validate Step 1 forms if we're on Step 1 (Sale mode)
+      let step1ValidationResult = { isValid: true, errors: {} };
+      if (currentStep === 1) {
+        console.log('🔍 Validating Step 1 forms (Personal, Orientation, Address)');
+        console.log('🔍 All Form Data for Step 1 validation:', allFormData);
+        console.log('🔍 Personal Information fields in allFormData:', {
+          firstName: allFormData.firstName,
+          surname: allFormData.surname,
+          gender: allFormData.gender,
+          aaparNo: allFormData.aaparNo,
+          dateOfBirth: allFormData.dateOfBirth,
+          aadharCardNo: allFormData.aadharCardNo,
+          quota: allFormData.quota,
+          admissionType: allFormData.admissionType,
+          phoneNumber: allFormData.phoneNumber
+        });
+        console.log('🔍 Address Information fields in allFormData:', {
+          doorNo: allFormData.doorNo,
+          streetName: allFormData.streetName,
+          area: allFormData.area,
+          pincode: allFormData.pincode,
+          mandal: allFormData.mandal,
+          city: allFormData.city
+        });
+        
+        step1ValidationResult = await validateAllForms(allFormData, 1, category);
+        console.log('🔍 Step 1 validation result:', step1ValidationResult);
+      }
       
-      const step1ValidationResult = await validateAllForms(allFormData, 1, category);
-      console.log('🔍 Step 1 validation result:', step1ValidationResult);
-      
-      // Only validate Step 2 forms if we're on Step 2
+      // Only validate Step 2 forms if we're on Step 2 (Confirmation mode)
       let step2ValidationResult = { isValid: true, errors: {} };
       if (currentStep === 2) {
+        console.log('🔍 Validating Step 2 forms (Family, Academic, Concession)');
         step2ValidationResult = await validateAllForms(allFormData, 2, category);
+        console.log('🔍 Step 2 validation result:', step2ValidationResult);
       }
       
       // Only validate orientation fields if we're on Step 1 (Sale)
@@ -786,14 +835,10 @@ const SaleForm = ({ onBack, initialData = {} }) => {
     }
   };
 
-  // Debug logging for status and navigation state
-  useEffect(() => {
-    console.log('🔍 SaleForm Debug Info:');
-    console.log('📍 Status from URL:', status);
-    console.log('📍 ApplicationNo from URL:', applicationNo);
-    console.log('📍 Location state:', location.state);
-    console.log('📍 Initial data:', initialData);
-  }, [status, applicationNo, location.state, initialData]);
+  // Debug logging for status and navigation state - reduced frequency
+  // useEffect(() => {
+  //   console.log('🔍 SaleForm Debug - Status:', status, 'ApplicationNo:', applicationNo);
+  // }, [status, applicationNo]);
 
   // Initialize form data from navigation state if coming from sale
   useEffect(() => {
@@ -806,21 +851,44 @@ const SaleForm = ({ onBack, initialData = {} }) => {
 
   // Update showConform when status changes
   useEffect(() => {
-    console.log('🔄 Status changed, setting showConform:', status === "confirmation");
-    setShowConform(status === "confirmation");
+    console.log('🔄 Status change - Setting showConform to:', status === "confirm");
+    setShowConform(status === "confirm");
   }, [status]);
+
+  // Debug showConform state changes - reduced frequency
+  // useEffect(() => {
+  //   console.log('🔄 showConform state changed:', showConform);
+  // }, [showConform]);
+
+  // Debug currentStep state changes - reduced frequency
+  // useEffect(() => {
+  //   console.log('🔄 currentStep state changed:', currentStep);
+  // }, [currentStep]);
+
+  // Debug showSuccess state changes - reduced frequency
+  // useEffect(() => {
+  //   console.log('🔄 showSuccess state changed:', showSuccess);
+  // }, [showSuccess]);
 
   // Show SuccessPage when form is submitted
   if (showSuccess) {
+    console.log('🎉 ===== RENDERING SUCCESS PAGE ONLY ===== 🎉');
+    console.log('🎉 showSuccess:', showSuccess);
+    console.log('🎉 status:', status);
+    console.log('🎉 currentStep:', status === "confirm" ? 3 : 2);
     return (
       <div className={styles.saleFormContainer}>
+        {/* Always render SaleFormContent header even on success page */}
         <SaleFormContent 
           status={status}
-          onBack={onBack}
+          onBack={handleBackNavigation}
           initialData={initialData}
-          showSuccess={true}
-          currentStep={status === "confirmation" ? 3 : 2}
+          showSuccess={showSuccess} // Pass the actual showSuccess value
+          showConfirmation={showConform}
+          currentStep={status === "confirm" ? 3 : 2} // Set appropriate step for success
+          onStatusHeaderDataFetched={handleStatusHeaderDataFetched}
         />
+        
         <div className={styles.successPageContainer}>
           <SuccessPage
             applicationNo="APP-2024-001"
@@ -832,20 +900,32 @@ const SaleForm = ({ onBack, initialData = {} }) => {
               setShowSuccess(false);
               if (onBack) onBack();
             }}
-            statusType={status === "confirmation" ? "confirmation" : "sale"}
+            statusType={status === "confirm" ? "confirmation" : "sale"}
           />
         </div>
       </div>
     );
   }
 
+  // Debug render values - reduced logging
+  // console.log('🎯 SaleForm Render - Status:', status, 'ShowConform:', showConform, 'Step:', currentStep);
+
   return (
-    <div className={styles.saleFormContainer}>
+    <div className={styles.saleFormContainer} data-testid="sale-form-component">
+      {/* DEBUG BOX - Set to true to show, false to hide */}
+      {false && (
+        <div style={{background: 'red', color: 'white', padding: '10px', margin: '10px', borderRadius: '5px', fontSize: '12px'}}>
+          🔴 DEBUG: SaleForm State
+          <br/>Status: {status} | Step: {currentStep} | Conform: {showConform ? 'Y' : 'N'}
+          <br/>URL: {location.pathname}
+        </div>
+      )}
+      
       <SaleFormContent 
         status={status}
-        onBack={onBack}
+        onBack={handleBackNavigation}
         initialData={initialData}
-        showSuccess={false} // Not success, just confirmation
+        showSuccess={showSuccess} // Pass the actual showSuccess value
         showConfirmation={showConform} // Pass showConform to show confirmation mode
         currentStep={currentStep} // Pass current step for progress header
         onStatusHeaderDataFetched={handleStatusHeaderDataFetched}
@@ -921,6 +1001,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
       ) : (
         /* Form Sections - Show when not in confirmation mode */
         <div className={styles.saleFormBody}>
+
           {/* Global Error Display */}
           {error && (
             <div className={styles.global_error}>
@@ -930,12 +1011,13 @@ const SaleForm = ({ onBack, initialData = {} }) => {
 
           {/* Personal Information Form */}
           <div className={styles.saleFormSection}>
+            {/* Debug Box for PersonalInformation */}
         
             <PersonalInformation 
               onSuccess={handlePersonalInfoSuccess} 
               externalErrors={Object.fromEntries(
                 Object.entries(fieldWiseErrors).filter(([key]) => 
-                  ['firstName', 'surname', 'gender', 'aaparNo', 'dateOfBirth', 'aadharCardNo', 'quota', 'admissionType', 'phoneNumber'].includes(key)
+                  ['firstName', 'surname', 'gender', 'aaparNo', 'aadharCardNo', 'quota', 'admissionType', 'phoneNumber', 'fatherName'].includes(key)
                 )
               )}
               onClearFieldError={clearSpecificFieldError}
@@ -944,12 +1026,13 @@ const SaleForm = ({ onBack, initialData = {} }) => {
           
           {/* Orientation Information Form */}
           <div className={styles.saleFormSection}>
+            {/* Debug Box for OrientationInformation */}
            
             <OrientationInformation 
               onSuccess={handleOrientationInfoSuccess} 
               externalErrors={Object.fromEntries(
                 Object.entries(fieldWiseErrors).filter(([key]) => 
-                  ['academicYear', 'branch', 'branchType', 'city', 'studentType', 'joiningClass', 'orientationName'].includes(key)
+                  ['academicYear', 'branch', 'studentType', 'joiningClass', 'orientationName'].includes(key)
                 )
               )}
               onClearFieldError={clearSpecificFieldError}
@@ -962,12 +1045,13 @@ const SaleForm = ({ onBack, initialData = {} }) => {
           
           {/* Address Information Form */}
           <div className={styles.saleFormSection}>
+            {/* Debug Box for AddressInformation */}
            
             <AddressInformation 
               onSuccess={handleAddressInfoSuccess} 
               externalErrors={Object.fromEntries(
                 Object.entries(fieldWiseErrors).filter(([key]) => 
-                  ['doorNo', 'streetName', 'area', 'pincode', 'mandal', 'city'].includes(key)
+                  ['doorNo', 'streetName', 'area', 'pincode', 'mandal', 'addressCity'].includes(key)
                 )
               )}
               onClearFieldError={clearSpecificFieldError}

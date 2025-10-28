@@ -306,50 +306,61 @@ export const validateAllForms = async (formData, currentStep = 2, category = 'CO
       // Step 1: Personal Information + Orientation Information + Address Information
       // Create a separate object with only Step 1 fields
       const step1Fields = {
-        // Personal Information fields (excluding Formik-handled fields)
+        // Personal Information fields
         firstName: formData.firstName || '',
         surname: formData.surname || '',
         gender: formData.gender || '',
         aaparNo: formData.aaparNo || '',
-        dateOfBirth: formData.dateOfBirth || '',
         aadharCardNo: formData.aadharCardNo || '',
         quota: formData.quota || '',
-        // admissionType: formData.admissionType || '', // Removed - handled by Formik
+        admissionType: formData.admissionType || '',
         phoneNumber: formData.phoneNumber || '',
+        fatherName: formData.fatherName || '',
+        // Orientation Information fields
+        academicYear: formData.academicYear || '',
+        branch: formData.branch || '',
+        branchType: formData.branchType || '',
+        city: formData.city || '',
+        studentType: formData.studentType || '',
+        joiningClass: formData.joiningClass || '',
+        orientationName: formData.orientationName || '',
         // Address Information fields
         doorNo: formData.doorNo || '',
         streetName: formData.streetName || '',
         area: formData.area || '',
         pincode: formData.pincode || '',
-        mandal: formData.mandal || ''
+        mandal: formData.mandal || '',
+        addressCity: formData.addressCity || formData.city || '' // Handle city field conflict
       };
       
       try {
         console.log('Validating Step 1 forms (Personal + Orientation + Address)');
         console.log('🔍 Step 1 fields being validated:', step1Fields);
+        
         await Yup.object({
-          // Personal Information fields only (excluding Formik-handled fields)
+          // Personal Information fields
           firstName: Yup.string().trim().min(2).max(50).matches(/^[A-Za-z\s]+$/).required(),
           surname: Yup.string().trim().min(2).max(50).matches(/^[A-Za-z\s]+$/).required(),
           gender: Yup.string().required(),
           aaparNo: Yup.string().trim().required(),
-          dateOfBirth: Yup.date().nullable().required().max(new Date()).test("age", "Age must be at least 5 years", function(value) {
-            if (!value) return false;
-            const today = new Date();
-            const birthDate = new Date(value);
-            const age = today.getFullYear() - birthDate.getFullYear();
-            return age >= 5;
-          }),
           aadharCardNo: Yup.string().trim().matches(/^\d{12}$/).required(),
           quota: Yup.string().required(),
-          // admissionType: Yup.string().required(), // Removed - handled by Formik
+          admissionType: Yup.string().required(),
           phoneNumber: Yup.string().trim().matches(/^[6-9]\d{9}$/).required(),
-          // Address Information fields only
+          fatherName: Yup.string().trim().min(2).max(50).matches(/^[A-Za-z\s]+$/).required(),
+          // Orientation Information fields
+          academicYear: Yup.string().trim().required(),
+          branch: Yup.string().required(),
+          studentType: Yup.string().required(),
+          joiningClass: Yup.string().required(),
+          orientationName: Yup.string().required(),
+          // Address Information fields
           doorNo: Yup.string().trim().required(),
           streetName: Yup.string().trim().required(),
           area: Yup.string().trim().required(),
           pincode: Yup.string().trim().matches(/^\d{6}$/).required(),
-          mandal: Yup.string().required()
+          mandal: Yup.string().required(),
+          addressCity: Yup.string().required()
         }).validate(step1Fields, { abortEarly: false });
       } catch (error) {
         console.log('Step 1 validation error:', error);
@@ -515,7 +526,7 @@ export const getMissingFieldsMessage = (errors) => {
     surname: "Surname", 
     gender: "Gender",
     aaparNo: "Aapar No",
-    dateOfBirth: "Date of Birth",
+    // dateOfBirth: Removed - not needed in confirmation step
     aadharCardNo: "Aadhar Card No",
     quota: "Quota",
     admissionType: "Admission Type",

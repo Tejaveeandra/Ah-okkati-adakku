@@ -119,8 +119,10 @@ const EditNextButtons = ({ onEdit, onNext, showSingleButton, singleButtonText, o
 
   const handleCloseModal = (success) => {
     setIsPaymentModalOpen(false);
-    if (success && onSingleButtonClick) {
-      onSingleButtonClick();
+    if (success) {
+      console.log('✅ Payment modal closed with success - confirmation was submitted successfully');
+      // Don't call onSingleButtonClick again - the confirmation was already submitted
+      // The success page should be shown by the parent component
     }
   };
 

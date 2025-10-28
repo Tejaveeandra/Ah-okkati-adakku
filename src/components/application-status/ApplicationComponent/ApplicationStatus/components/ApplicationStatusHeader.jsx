@@ -20,7 +20,8 @@ const ApplicationStatusHeader = ({
   selectedCampus,
   setSelectedCampus,
   studentCategory,
-  setStudentCategory
+  setStudentCategory,
+  data = [] // Add data prop
 }) => {
   return (
     <div className={styles["application-status__actions"]}>
@@ -73,7 +74,13 @@ const ApplicationStatusHeader = ({
             <img src={exportIcon} alt="Export" /> Export
           </button>
           {showExport && (
-            <FileExport onExport={(type) => console.log("Export:", type)} />
+            <FileExport 
+              onExport={(type, selectedRecords) => {
+                console.log("Export:", type, "Records:", selectedRecords.length);
+                setShowExport(false); // Close dropdown after export
+              }} 
+              data={data}
+            />
           )}
         </div>
       )}

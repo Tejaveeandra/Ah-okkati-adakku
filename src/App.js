@@ -38,7 +38,7 @@ function AppWrapper() {
       <Routes>
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="students" element={<Students />} />
-        <Route path="/application/*" element={<ApplicationModuleContainer />} />
+        <Route path="application/*" element={<ApplicationModuleContainer />} />
         <Route path="/employee" element={<Employee />} />
         <Route path="/fleet" element={<Fleet />} />
         <Route path="/warehouse" element={<Warehouse />} />

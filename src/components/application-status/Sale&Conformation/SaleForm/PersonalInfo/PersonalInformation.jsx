@@ -13,6 +13,9 @@ import ParentInfo from "./components/ParentInfo";
 import styles from "./PersonalInformation.module.css";
 
 const PersonalInformation = ({ onSuccess, externalErrors = {}, onClearFieldError }) => {
+  // Debug logging for external errors
+  console.log('🔍 PersonalInformation received externalErrors:', externalErrors);
+  
   const { isSubmitting, error, handleSubmit } = usePersonalInfoSubmission();
   const { 
     quotaOptions, 
@@ -109,12 +112,15 @@ const PersonalInformation = ({ onSuccess, externalErrors = {}, onClearFieldError
 
         return (
         <Form>
+          {/* Debug Box for PersonalInformation */}
+
           {/* Global Error Display */}
           {error && (
             <div className={styles.global_error}>
               {error}
             </div>
           )}
+
 
           {/* Personal Information Section Title - Full Width */}
           <div className={`${styles.personal_info_section_general_field_label_wrapper} ${styles.personal_info_full_width}`}>

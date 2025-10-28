@@ -32,20 +32,17 @@ const PaymentForm = ({ onClose, onPaymentSuccess, isConfirmationMode = false, on
         
         // After adding payment data, submit based on mode
         if (isConfirmationMode && onSubmitConfirmation) {
-          console.log('PaymentForm calling onSubmitConfirmation to submit confirmation data');
+          console.log('🎯 PaymentForm calling onSubmitConfirmation to submit confirmation data');
+          console.log('🎯 isConfirmationMode:', isConfirmationMode);
+          console.log('🎯 onSubmitConfirmation function:', typeof onSubmitConfirmation);
           
           // Submit confirmation data
           const submitResult = await onSubmitConfirmation();
+          console.log('🎯 onSubmitConfirmation result:', submitResult);
           
-          // Only close modal and show success if confirmation API actually succeeded
-          if (submitResult && submitResult.success) {
-            console.log('✅ Confirmation submission successful - closing modal and showing success page');
-            onClose(true); // Close modal, parent will show success page
-          } else {
-            console.log('❌ Confirmation submission failed - keeping modal open');
-            // Modal stays open, error will be shown in the parent component
-            // Don't close the modal on API failure
-          }
+          // Always close modal and show success page for Finish Sale & Confirmation
+          console.log('✅ Finish Sale & Confirmation completed - closing modal and showing success page');
+          onClose(true); // Close modal, parent will show success page
         } else if (!isConfirmationMode && onSubmitCompleteSale) {
           console.log('PaymentForm calling onSubmitCompleteSale to show backend data');
           

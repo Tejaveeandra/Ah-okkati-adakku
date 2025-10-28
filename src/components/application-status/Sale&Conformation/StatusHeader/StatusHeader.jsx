@@ -133,15 +133,10 @@ const StatusHeader = ({ applicationNo, campusName, zoneName, academicYear, appli
 
   // Fetch data using unified API when applicationNo changes
   useEffect(() => {
-    console.log('🔄 ===== STATUS HEADER useEffect TRIGGERED ===== 🔄');
-    console.log('🔄 useEffect - applicationNo:', applicationNo);
-    console.log('🔄 useEffect - applicationNo type:', typeof applicationNo);
-    console.log('🔄 useEffect - applicationNo truthy:', !!applicationNo);
+    console.log('🔄 StatusHeader useEffect - applicationNo:', applicationNo);
     
     const fetchData = async (retryCount = 0) => {
-      console.log('🔥 ===== fetchData FUNCTION CALLED ===== 🔥');
-      console.log('🔥 fetchData - applicationNo:', applicationNo);
-      console.log('🔥 fetchData - retryCount:', retryCount);
+      console.log('🔥 StatusHeader fetchData - applicationNo:', applicationNo);
       
       if (!applicationNo) return;
       

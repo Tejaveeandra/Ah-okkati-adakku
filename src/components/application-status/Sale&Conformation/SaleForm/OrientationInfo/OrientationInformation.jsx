@@ -1,5 +1,5 @@
 import { Formik, Form } from "formik";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { formFields, initialValues } from "./constants/orientationConstants";
 import { validationSchema } from "./constants/validationSchema";
 import { useOrientationSubmission } from "./hooks/useOrientationSubmission";
@@ -8,6 +8,9 @@ import OrientationFormGrid from "./components/OrientationFormGrid";
 import styles from "./OrientationInformation.module.css";
 
 const OrientationInformation = ({ onSuccess, externalErrors = {}, onClearFieldError, onValidationRef, allFormData, academicYear, academicYearId }) => {
+  // Debug logging for external errors
+  console.log('🔍 OrientationInformation received externalErrors:', externalErrors);
+  
   const { isSubmitting, error, handleSubmit } = useOrientationSubmission();
 
   // Track previous values to detect changes
@@ -79,7 +82,7 @@ const OrientationInformation = ({ onSuccess, externalErrors = {}, onClearFieldEr
   };
 
   // Function to validate orientation form and return errors
-  const validateOrientationForm = async () => {
+  const validateOrientationForm = useCallback(async () => {
     // Get current form values from the form data
     const currentValues = {
       academicYear: allFormData.academicYear || enhancedInitialValues.academicYear,
@@ -106,14 +109,14 @@ const OrientationInformation = ({ onSuccess, externalErrors = {}, onClearFieldEr
       }
       return errors;
     }
-  };
+  }, [allFormData, enhancedInitialValues]);
 
   // Pass validation function to parent
   useEffect(() => {
     if (onValidationRef) {
       onValidationRef(validateOrientationForm);
     }
-  }, [onValidationRef]);
+  }, [onValidationRef, validateOrientationForm]);
 
   return (
     <Formik
@@ -130,6 +133,7 @@ const OrientationInformation = ({ onSuccess, externalErrors = {}, onClearFieldEr
 
         return (
         <Form>
+
           {/* Global Error Display */}
           {error && (
             <div className={styles.global_error}>

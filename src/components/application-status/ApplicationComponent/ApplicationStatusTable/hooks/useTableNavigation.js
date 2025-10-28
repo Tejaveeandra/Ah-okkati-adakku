@@ -32,7 +32,7 @@ export const useTableNavigation = () => {
     const rowObj = row?.original ?? row ?? {};
     const id = rowObj?.applicationNo ?? rowObj?.id ?? null;
     
-    handleNavigation(rowObj, 'Confirmation', navigate, `/scopes/application/status/${id}/confirmation`);
+    handleNavigation(rowObj, 'Confirmation', navigate, `/scopes/application/status/${id}/confirm`);
   }, [navigate]);
 
   const handleNavigateToDamage = useCallback((row) => {

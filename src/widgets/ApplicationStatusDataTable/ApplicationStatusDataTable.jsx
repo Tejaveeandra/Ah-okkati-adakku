@@ -95,6 +95,16 @@ const ApplicationStatusDataTable = ({
           console.warn("onNavigateToConfirmation callback is not provided");
         }
         break;
+      case "payment pending":
+      case "payment_pending":
+      case "paymentpending":
+        // Navigate to confirmation for payment pending
+        if (onNavigateToConfirmation) {
+          onNavigateToConfirmation(rowData);
+        } else {
+          console.warn("onNavigateToConfirmation callback is not provided for payment pending");
+        }
+        break;
       case "damaged":
         if (onNavigateToDamage) {
           onNavigateToDamage(rowData);
@@ -143,6 +153,10 @@ const ApplicationStatusDataTable = ({
       case "withpro":
       case "with_pro":
         return "To Sold";
+      case "payment pending":
+      case "payment_pending":
+      case "paymentpending":
+        return "Pay";
       case "confirmed":
       case "approved":
         return "Update"; // Disabled button, but keeping text

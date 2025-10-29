@@ -15,6 +15,10 @@ import styles from "./PersonalInformation.module.css";
 const PersonalInformation = ({ onSuccess, externalErrors = {}, onClearFieldError }) => {
   // Debug logging for external errors
   console.log('🔍 PersonalInformation received externalErrors:', externalErrors);
+  console.log('🔍 PersonalInformation externalErrors keys:', Object.keys(externalErrors));
+  console.log('🔍 PersonalInformation externalErrors count:', Object.keys(externalErrors).length);
+  console.log('🔍 PersonalInformation externalErrors for dateOfBirth:', externalErrors.dateOfBirth);
+  console.log('🔍 PersonalInformation externalErrors for admissionType:', externalErrors.admissionType);
   
   const { isSubmitting, error, handleSubmit } = usePersonalInfoSubmission();
   const { 
@@ -50,10 +54,36 @@ const PersonalInformation = ({ onSuccess, externalErrors = {}, onClearFieldError
   const customValidate = (values) => {
     const errors = {};
 
-    // Debug logging for admission type validation
+    // Debug logging for validation
+    console.log('🔍 customValidate - values:', values);
+    console.log('🔍 customValidate - values.dateOfBirth:', values.dateOfBirth);
     console.log('🔍 customValidate - values.admissionType:', values.admissionType);
     console.log('🔍 customValidate - admissionTypeOptions:', admissionTypeOptions);
-    console.log('🔍 customValidate - values:', values);
+
+    // Validate date of birth
+    if (!values.dateOfBirth) {
+      errors.dateOfBirth = 'Date of Birth is required';
+    } else {
+      // Check if date is in the future
+      const today = new Date();
+      const birthDate = new Date(values.dateOfBirth);
+      if (birthDate > today) {
+        errors.dateOfBirth = 'Date of Birth cannot be in the future';
+      } else {
+        // Check age (must be at least 5 years)
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        // If birthday hasn't occurred this year, subtract 1
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        
+        if (age < 5) {
+          errors.dateOfBirth = 'Age must be at least 5 years';
+        }
+      }
+    }
 
     // Check if employeeId should be required (when Staff children quota is selected)
     const selectedQuotaOption = quotaOptions.find(option => option.value === values.quota);
@@ -127,8 +157,8 @@ const PersonalInformation = ({ onSuccess, externalErrors = {}, onClearFieldError
       initialValues={initialValues}
       validationSchema={validationSchema}
       validate={customValidate}
-      validateOnBlur={false}
-      validateOnChange={false}
+      validateOnBlur={true}
+      validateOnChange={true}
       validateOnSubmit={true}
       onSubmit={onSubmit}
     >

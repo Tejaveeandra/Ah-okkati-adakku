@@ -115,6 +115,13 @@ const FamilyInformation = ({ formData = {}, onSuccess, externalErrors = {}, onCl
       
       setFieldValue(name, processedValue);
       setFieldValue(`${name}Id`, sectorId); // Store the ID for backend
+      
+      // Clear occupation when sector changes to "Other" or "Others"
+      const lowerSector = processedValue.toLowerCase();
+      if (lowerSector.includes("other")) {
+        const occupationFieldName = name.replace("Sector", "Occupation");
+        setFieldValue(occupationFieldName, "");
+      }
     } else if (name === "fatherOccupation" || name === "motherOccupation") {
       const selectedOccupation = occupations.find(occupation => occupation.label === value);
       const occupationId = selectedOccupation ? selectedOccupation.id : "";
@@ -183,27 +190,39 @@ const FamilyInformation = ({ formData = {}, onSuccess, externalErrors = {}, onCl
   
   // Occupation options for dropdown - now fetched from API
   const occupationOptions = occupations.map(occupation => occupation.label);
+  
+  // Filter occupation options to show only "Others" when sector is "Other" or "Others"
+  const getFilteredOccupationOptions = (sectorValue) => {
+    if (!sectorValue) return occupationOptions;
+    const lowerSector = sectorValue.toLowerCase();
+    if (lowerSector.includes("other")) {
+      return ["Others"];
+    }
+    return occupationOptions;
+  };
 
   // Sector options for dropdown - now fetched from API
   const sectorOptions = sectors.map(sector => sector.label);
 
-  const fatherFields = [
+  // Helper function to get father fields with dynamic occupation options
+  const getFatherFields = (values) => [
     { label: "Father Name", name: "fatherName", placeholder: "Enter Father Name", type: "input", required: true },
    
     { label: "Phone Number", name: "fatherPhoneNumber", placeholder: "Enter Phone Number",type: "input", required: true },
     { label: "Email Id", name: "fatherEmail", placeholder: "Enter Father Mail id", type: "Email" },
     {label: "Sector", name: "fatherSector", placeholder: "Select Sector", type: "dropdown", options: sectorOptions },
-    { label: "Occupation", name: "fatherOccupation", placeholder: "Select Occupation", type: "dropdown", options: occupationOptions },
+    { label: "Occupation", name: "fatherOccupation", placeholder: "Select Occupation", type: "dropdown", options: getFilteredOccupationOptions(values.fatherSector) },
     { label: "Other Occupation", name: "fatherOtherOccupation", placeholder: "Enter Other Occupation", type: "input", required: false },
   ];
 
-  const motherFields = [
+  // Helper function to get mother fields with dynamic occupation options
+  const getMotherFields = (values) => [
     { label: "Mother Name", name: "motherName", placeholder: "Enter Mother Name", type: "input", required: true },
    
     { label: "Phone Number", name: "motherPhoneNumber", placeholder: "Enter Phone Number", type: "input", required: true },
     { label: "Email Id", name: "motherEmail", placeholder: "Enter Mother Mail id", type: "Email" },
     { label: "Sector", name: "motherSector", placeholder: "Select Sector", type: "dropdown", options: sectorOptions },
-    { label: "Occupation", name: "motherOccupation", placeholder: "Select Occupation", type: "dropdown", options: occupationOptions },
+    { label: "Occupation", name: "motherOccupation", placeholder: "Select Occupation", type: "dropdown", options: getFilteredOccupationOptions(values.motherSector) },
     { label: "Other Occupation", name: "motherOtherOccupation", placeholder: "Enter Other Occupation", type: "input", required: false },
   ];
 
@@ -237,7 +256,7 @@ const FamilyInformation = ({ formData = {}, onSuccess, externalErrors = {}, onCl
                   <div className={styles.family_info_section_general_line}></div>
                 </div>
                 <div className={styles.family_info_section_general_form_grid}>
-                  {fatherFields.map((field, index) => {
+                  {getFatherFields(values).map((field, index) => {
                     // Conditional visibility for Other Occupation field
                     if (field.name === "fatherOtherOccupation") {
                       const selectedOccupation = values.fatherOccupation?.toLowerCase() || "";
@@ -250,26 +269,28 @@ const FamilyInformation = ({ formData = {}, onSuccess, externalErrors = {}, onCl
                     return (
                       <div key={index} className={styles.family_info_section_general_form_field}>
                         {field.name === "fatherPhoneNumber" ? (
-                        <div className={styles.inputWithIconWrapper}>
-                          <Inputbox
-                            label={field.label}
-                            id={field.name}
-                            name={field.name}
-                            placeholder={field.placeholder}
-                            value={values[field.name] || ""}
-                            onChange={(e) => handlePhoneFieldChange(e, setFieldValue)}
-                            onBlur={handleBlur}
-                            required={field.required}
-                            type={field.type || "text"}
-                          />
-                          <PhoneIcon className={styles.inputWithIcon} />
+                        <>
+                          <div className={styles.inputWithIconWrapper}>
+                            <Inputbox
+                              label={field.label}
+                              id={field.name}
+                              name={field.name}
+                              placeholder={field.placeholder}
+                              value={values[field.name] || ""}
+                              onChange={(e) => handlePhoneFieldChange(e, setFieldValue)}
+                              onBlur={handleBlur}
+                              required={field.required}
+                              type={field.type || "text"}
+                            />
+                            <PhoneIcon className={styles.inputWithIcon} />
+                          </div>
                           <FormError 
                             error={errors[field.name]} 
                             touched={touched[field.name]} 
                             externalErrors={externalErrors}
                             name={field.name}
                           />
-                        </div>
+                        </>
                       ) : field.name === "fatherEmail" ? (
                         <div className={styles.inputWithIconWrapper}>
                           <Inputbox
@@ -392,7 +413,7 @@ const FamilyInformation = ({ formData = {}, onSuccess, externalErrors = {}, onCl
             <div className={styles.family_info_section_general_form_row}>
               <div className={`${styles.family_info_section_general_sibling_container} ${styles.family_info_section_general_full_width}`}>
                 <div className={styles.family_info_section_general_form_grid}>
-                  {motherFields.map((field, index) => {
+                  {getMotherFields(values).map((field, index) => {
                     // Conditional visibility for Other Occupation field
                     if (field.name === "motherOtherOccupation") {
                       const selectedOccupation = values.motherOccupation?.toLowerCase() || "";
@@ -405,26 +426,28 @@ const FamilyInformation = ({ formData = {}, onSuccess, externalErrors = {}, onCl
                     return (
                     <div key={index} className={styles.family_info_section_general_form_field}>
                       {field.name === "motherPhoneNumber" ? (
-                        <div className={styles.inputWithIconWrapper}>
-                          <Inputbox
-                            label={field.label}
-                            id={field.name}
-                            name={field.name}
-                            placeholder={field.placeholder}
-                            value={values[field.name] || ""}
-                            onChange={(e) => handlePhoneFieldChange(e, setFieldValue)}
-                            onBlur={handleBlur}
-                            required={field.required}
-                            type={field.type || "text"}
-                          />
-                          <PhoneIcon className={styles.inputWithIcon} />
+                        <>
+                          <div className={styles.inputWithIconWrapper}>
+                            <Inputbox
+                              label={field.label}
+                              id={field.name}
+                              name={field.name}
+                              placeholder={field.placeholder}
+                              value={values[field.name] || ""}
+                              onChange={(e) => handlePhoneFieldChange(e, setFieldValue)}
+                              onBlur={handleBlur}
+                              required={field.required}
+                              type={field.type || "text"}
+                            />
+                            <PhoneIcon className={styles.inputWithIcon} />
+                          </div>
                           <FormError 
                             error={errors[field.name]} 
                             touched={touched[field.name]} 
                             externalErrors={externalErrors}
                             name={field.name}
                           />
-                        </div>
+                        </>
                       ) : field.name === "motherEmail" ? (
                         <div className={styles.inputWithIconWrapper}>
                           <Inputbox

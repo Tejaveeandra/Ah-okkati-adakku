@@ -339,6 +339,7 @@ const PaymentFormFields = ({ formFields, values, handleChange, handleBlur, setFi
                   placeholder={field.placeholder}
                   error={meta.touched && meta.error}
                   required={field.required}
+                  readOnly={field.type === "date"} // Make date fields read-only so they cannot be changed
                 />
               )
             )}

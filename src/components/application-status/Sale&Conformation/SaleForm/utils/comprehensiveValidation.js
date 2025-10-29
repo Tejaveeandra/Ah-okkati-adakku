@@ -30,9 +30,19 @@ export const comprehensiveValidationSchema = Yup.object({
     .max(new Date(), "Date of Birth cannot be in the future")
     .test("age", "Age must be at least 5 years", function(value) {
       if (!value) return false;
+      
       const today = new Date();
       const birthDate = new Date(value);
-      const age = today.getFullYear() - birthDate.getFullYear();
+      
+      // Calculate exact age
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      
+      // If birthday hasn't occurred this year, subtract 1
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      
       return age >= 5;
     }),
   
@@ -132,15 +142,15 @@ export const comprehensiveValidationSchema = Yup.object({
   schoolType: Yup.string()
     .required("School Type is required"),
   
-  // Concession Information Fields
-  givenBy: Yup.string()
-    .required("Given By is required"),
+  // Concession Information Fields (optional)
+  // givenBy: Yup.string()
+  //   .required("Given By is required"), // Removed - optional field
   
-  authorizedBy: Yup.string()
-    .required("Authorized By is required"),
+  // authorizedBy: Yup.string()
+  //   .required("Authorized By is required"), // Removed - optional field
   
-  reason: Yup.string()
-    .required("Reason is required"),
+  // reason: Yup.string()
+  //   .required("Reason is required"), // Removed - optional field
   
   phoneNumber: Yup.string()
     .trim()
@@ -311,6 +321,7 @@ export const validateAllForms = async (formData, currentStep = 2, category = 'CO
         surname: formData.surname || '',
         gender: formData.gender || '',
         aaparNo: formData.aaparNo || '',
+        dateOfBirth: formData.dateOfBirth || null,
         aadharCardNo: formData.aadharCardNo || '',
         quota: formData.quota || '',
         admissionType: formData.admissionType || '',
@@ -330,7 +341,7 @@ export const validateAllForms = async (formData, currentStep = 2, category = 'CO
         area: formData.area || '',
         pincode: formData.pincode || '',
         mandal: formData.mandal || '',
-        addressCity: formData.addressCity || formData.city || '' // Handle city field conflict
+        addressCity: formData.city || '' // Address city field
       };
       
       try {
@@ -340,6 +351,16 @@ export const validateAllForms = async (formData, currentStep = 2, category = 'CO
         console.log('🔍 admissionType debug - typeof formData.admissionType:', typeof formData.admissionType);
         console.log('🔍 admissionType debug - step1Fields.admissionType:', step1Fields.admissionType);
         console.log('🔍 admissionType debug - typeof step1Fields.admissionType:', typeof step1Fields.admissionType);
+        console.log('🔍 dateOfBirth debug - formData.dateOfBirth:', formData.dateOfBirth);
+        console.log('🔍 dateOfBirth debug - typeof formData.dateOfBirth:', typeof formData.dateOfBirth);
+        console.log('🔍 dateOfBirth debug - step1Fields.dateOfBirth:', step1Fields.dateOfBirth);
+        console.log('🔍 dateOfBirth debug - typeof step1Fields.dateOfBirth:', typeof step1Fields.dateOfBirth);
+        console.log('🔍 city debug - formData.city:', formData.city);
+        console.log('🔍 city debug - typeof formData.city:', typeof formData.city);
+        console.log('🔍 city debug - step1Fields.city:', step1Fields.city);
+        console.log('🔍 city debug - typeof step1Fields.city:', typeof step1Fields.city);
+        console.log('🔍 addressCity debug - formData.city:', formData.city);
+        console.log('🔍 addressCity debug - step1Fields.addressCity:', step1Fields.addressCity);
         
         await Yup.object({
           // Personal Information fields
@@ -347,6 +368,31 @@ export const validateAllForms = async (formData, currentStep = 2, category = 'CO
           surname: Yup.string().trim().min(2).max(50).matches(/^[A-Za-z\s]+$/).required(),
           gender: Yup.string().required(),
           aaparNo: Yup.string().trim().required(),
+          dateOfBirth: Yup.date()
+          .nullable()
+          .required("Date of Birth is required")
+          .max(new Date(), "Date of Birth cannot be in the future")
+          .test("age", "Invalid age for the selected category", function(value) {
+            if (!value) return true; // Let required handle it
+            const today = new Date();
+            const birthDate = new Date(value);
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+
+            if (category === 'SCHOOL') {
+                if (age <= 3) {
+                  return this.createError({ path: 'dateOfBirth', message: 'Age must be more than 3 years for School' });
+                }
+            } else if (category === 'COLLEGE' || category === 'DEGREE') {
+                if (age <= 15) {
+                  return this.createError({ path: 'dateOfBirth', message: 'Age must be more than 15 years for College/Degree' });
+                }
+            }
+            return true;
+          }),
           aadharCardNo: Yup.string().trim().matches(/^\d{12}$/).required(),
           quota: Yup.string().required(),
           admissionType: Yup.mixed().test('required', 'Admission Type is required', function(value) {
@@ -370,13 +416,23 @@ export const validateAllForms = async (formData, currentStep = 2, category = 'CO
         }).validate(step1Fields, { abortEarly: false });
       } catch (error) {
         console.log('Step 1 validation error:', error);
+        console.log('🔍 Step 1 validation error details:', {
+          message: error.message,
+          inner: error.inner,
+          innerCount: error.inner ? error.inner.length : 0
+        });
         if (error.inner) {
           error.inner.forEach(err => {
-            personalErrors[err.path] = err.message;
+        console.log('🔍 Step 1 validation field error:', err.path, ':', err.message);
+        if (err.path === 'addressCity') {
+          console.log('🔍 ADDRESS CITY FIELD ERROR DETECTED:', err.message);
+        }
+        personalErrors[err.path] = err.message;
           });
         } else {
           personalErrors.general = error.message;
         }
+        console.log('🔍 Step 1 personalErrors after processing:', personalErrors);
       }
     } else if (currentStep === 2) {
       // Step 2: Family Information + Academic Information + Concession Information
@@ -407,6 +463,11 @@ export const validateAllForms = async (formData, currentStep = 2, category = 'CO
         foodType: formData.foodType || '',
         schoolType: formData.schoolType || '',
         // Concession Information fields
+        yearConcession1st: formData.yearConcession1st || '',
+        yearConcession2nd: formData.yearConcession2nd || '',
+        yearConcession3rd: formData.yearConcession3rd || '',
+        admissionFee: formData.admissionFee || '',
+        tuitionFee: formData.tuitionFee || '',
         givenBy: formData.givenBy || '',
         authorizedBy: formData.authorizedBy || '',
         reason: formData.reason || ''
@@ -436,16 +497,49 @@ export const validateAllForms = async (formData, currentStep = 2, category = 'CO
           
           // Academic Information fields - conditional based on category
           // orientationName: Yup.string().required(), // Removed - handled by Formik
-          scoreMarks: Yup.string().required(), // Changed from 'marks' to 'scoreMarks'
+          // scoreMarks: Yup.string().required(), // Removed - validation not required
           bloodGroup: Yup.string().required(),
           caste: Yup.string().required(),
           religion: Yup.string().required(),
           foodType: Yup.string().required(),
           
-          // Concession Information fields (always required)
-          givenBy: Yup.string().required(),
-          authorizedBy: Yup.string().required(),
-          reason: Yup.string().required()
+          // Concession Information fields - conditional validation
+          // If any concession amount is entered, Given By, Authorized By, and Reason become required
+          // Concession amount fields should only contain numbers (and optional decimal point)
+          yearConcession1st: Yup.string().matches(/^$|^[0-9]+(\.[0-9]+)?$/, "Only numbers are allowed"),
+          yearConcession2nd: Yup.string().matches(/^$|^[0-9]+(\.[0-9]+)?$/, "Only numbers are allowed"),
+          yearConcession3rd: Yup.string().matches(/^$|^[0-9]+(\.[0-9]+)?$/, "Only numbers are allowed"),
+          admissionFee: Yup.string().matches(/^$|^[0-9]+(\.[0-9]+)?$/, "Only numbers are allowed"),
+          tuitionFee: Yup.string().matches(/^$|^[0-9]+(\.[0-9]+)?$/, "Only numbers are allowed"),
+          givenBy: Yup.string().when(['yearConcession1st', 'yearConcession2nd', 'yearConcession3rd', 'admissionFee', 'tuitionFee'], {
+            is: (yearConcession1st, yearConcession2nd, yearConcession3rd, admissionFee, tuitionFee) => {
+              const checkValue = (val) => val && String(val).trim() !== '';
+              const hasConcession = 
+                checkValue(yearConcession1st) ||
+                checkValue(yearConcession2nd) ||
+                checkValue(yearConcession3rd) ||
+                checkValue(admissionFee) ||
+                checkValue(tuitionFee);
+              return hasConcession;
+            },
+            then: (schema) => schema.required("Given By is required when concession information is provided"),
+            otherwise: (schema) => schema
+          }),
+          authorizedBy: Yup.string().when(['yearConcession1st', 'yearConcession2nd', 'yearConcession3rd', 'admissionFee', 'tuitionFee'], {
+            is: (yearConcession1st, yearConcession2nd, yearConcession3rd, admissionFee, tuitionFee) => {
+              const checkValue = (val) => val && String(val).trim() !== '';
+              const hasConcession = 
+                checkValue(yearConcession1st) ||
+                checkValue(yearConcession2nd) ||
+                checkValue(yearConcession3rd) ||
+                checkValue(admissionFee) ||
+                checkValue(tuitionFee);
+              return hasConcession;
+            },
+            then: (schema) => schema.required("Authorized By is required when concession information is provided"),
+            otherwise: (schema) => schema
+          }),
+          reason: Yup.string() // Reason is optional even when concession amounts are entered
         };
         
         // Add school-specific fields only for COLLEGE category
@@ -532,7 +626,7 @@ export const getMissingFieldsMessage = (errors) => {
     surname: "Surname", 
     gender: "Gender",
     aaparNo: "Aapar No",
-    // dateOfBirth: Removed - not needed in confirmation step
+    dateOfBirth: "Date of Birth",
     aadharCardNo: "Aadhar Card No",
     quota: "Quota",
     admissionType: "Admission Type",
@@ -584,7 +678,7 @@ export const getMissingFieldsMessage = (errors) => {
     state: "State",
     district: "District",
     mandal: "Mandal",
-    addressCity: "Address City",
+    addressCity: "City",
     
     // General error
     general: "Validation Error"

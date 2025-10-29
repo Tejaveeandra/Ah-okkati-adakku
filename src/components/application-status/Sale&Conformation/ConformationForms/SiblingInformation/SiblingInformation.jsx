@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from "react";
 import Inputbox from "../../../../../widgets/Inputbox/InputBox";
 import Dropdown from "../../../../../widgets/Dropdown/Dropdown";
 import { Button as MuiButton } from "@mui/material";
@@ -6,9 +6,10 @@ import Button from "../../../../../widgets/Button/Button";
 import { ReactComponent as Add } from "../../../../../assets/application-status/si_add-fill.svg";
 import { ReactComponent as UploadIcon } from "../../../../../assets/application-status/Upload.svg";
 import { useRelationTypes, useStudentClasses, useGenders } from "../hooks/useConfirmationData";
+import { capitalizeWords } from "../../../../../utils/textUtils";
 import styles from "./SiblingInformation.module.css";
 
-const SiblingInformation = ({ onSuccess }) => {
+const SiblingInformation = forwardRef(({ onSuccess }, ref) => {
   // Fetch relation types, student classes, and genders data using custom hooks
   const { relationTypes, loading: relationTypesLoading, error: relationTypesError } = useRelationTypes();
   const { studentClasses, loading: studentClassesLoading, error: studentClassesError } = useStudentClasses();
@@ -52,6 +53,8 @@ const SiblingInformation = ({ onSuccess }) => {
   const [showSiblings, setShowSiblings] = useState(false);
   const [siblings, setSiblings] = useState([]);
   const [annexure, setAnnexure] = useState([]);
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
 
   // Update parent when siblings data changes (prevent infinite loop)
   useEffect(() => {
@@ -60,14 +63,119 @@ const SiblingInformation = ({ onSuccess }) => {
     }
   }, [siblings]);
 
+  // Validation function
+  const validateSibling = (sibling, index) => {
+    const siblingErrors = {};
+    
+    if (!sibling.fullName || sibling.fullName.trim() === '') {
+      siblingErrors.fullName = 'Full Name is required';
+    }
+    
+    if (!sibling.relationType || sibling.relationType === '') {
+      siblingErrors.relationType = 'Relation Type is required';
+    }
+    
+    if (!sibling.class || sibling.class === '') {
+      siblingErrors.class = 'Class is required';
+    }
+    
+    if (!sibling.gender || sibling.gender === '') {
+      siblingErrors.gender = 'Gender is required';
+    }
+    
+    if (!sibling.schoolName || sibling.schoolName.trim() === '') {
+      siblingErrors.schoolName = 'School Name is required';
+    }
+    
+    setErrors(prev => ({
+      ...prev,
+      [`${index}-fullName`]: siblingErrors.fullName,
+      [`${index}-relationType`]: siblingErrors.relationType,
+      [`${index}-class`]: siblingErrors.class,
+      [`${index}-gender`]: siblingErrors.gender,
+      [`${index}-schoolName`]: siblingErrors.schoolName,
+    }));
+    
+    return Object.keys(siblingErrors).length === 0;
+  };
+
+  // Function to validate all siblings and mark all fields as touched
+  const validateAllSiblings = () => {
+    // Mark all fields as touched
+    const newTouched = {};
+    siblings.forEach((sibling, index) => {
+      fieldConfig.forEach(field => {
+        newTouched[`${index}-${field.name}`] = true;
+      });
+    });
+    setTouched(newTouched);
+    
+    // Validate all siblings and collect errors
+    let allValid = true;
+    const validationErrors = {};
+    
+    siblings.forEach((sibling, index) => {
+      const siblingErrors = {};
+      
+      if (!sibling.fullName || sibling.fullName.trim() === '') {
+        siblingErrors.fullName = 'Full Name is required';
+      }
+      
+      if (!sibling.relationType || sibling.relationType === '') {
+        siblingErrors.relationType = 'Relation Type is required';
+      }
+      
+      if (!sibling.class || sibling.class === '') {
+        siblingErrors.class = 'Class is required';
+      }
+      
+      if (!sibling.gender || sibling.gender === '') {
+        siblingErrors.gender = 'Gender is required';
+      }
+      
+      if (!sibling.schoolName || sibling.schoolName.trim() === '') {
+        siblingErrors.schoolName = 'School Name is required';
+      }
+      
+      if (Object.keys(siblingErrors).length > 0) {
+        allValid = false;
+        // Store errors with index prefix for field-wise display
+        Object.keys(siblingErrors).forEach(field => {
+          validationErrors[`${index}-${field}`] = siblingErrors[field];
+        });
+      }
+    });
+    
+    // Update errors state
+    setErrors(prev => ({ ...prev, ...validationErrors }));
+    
+    return { isValid: allValid, errors: validationErrors };
+  };
+
+  // Expose validate function to parent via ref
+  useImperativeHandle(ref, () => ({
+    validate: () => {
+      return validateAllSiblings();
+    }
+  }));
+
   const handleAddSibling = () => {
-    setSiblings(prev => [...prev, {
-      fullName: "",
-      relationType: "",
-      class: "",
-      schoolName: "",
-      gender: "",
-    }]);
+    setSiblings(prev => {
+      const newSiblings = [...prev, {
+        fullName: "",
+        relationType: "",
+        class: "",
+        schoolName: "",
+        gender: "",
+      }];
+      
+      // Validate all existing siblings
+      prev.forEach((sibling, index) => {
+        validateSibling(sibling, index);
+      });
+      
+      return newSiblings;
+    });
     setShowSiblings(true);
   };
 
@@ -78,6 +186,42 @@ const SiblingInformation = ({ onSuccess }) => {
         setShowSiblings(false);
       }
       return newSiblings;
+    });
+    
+    // Clear errors for removed sibling and reindex remaining siblings
+    setErrors(prev => {
+      const newErrors = {};
+      Object.keys(prev).forEach(key => {
+        const [errorIndex] = key.split('-');
+        if (parseInt(errorIndex) !== index) {
+          // Reindex if sibling index is greater than removed index
+          if (parseInt(errorIndex) > index) {
+            const fieldName = key.split('-').slice(1).join('-');
+            newErrors[`${parseInt(errorIndex) - 1}-${fieldName}`] = prev[key];
+          } else {
+            newErrors[key] = prev[key];
+          }
+        }
+      });
+      return newErrors;
+    });
+    
+    // Clear touched state for removed sibling and reindex remaining siblings
+    setTouched(prev => {
+      const newTouched = {};
+      Object.keys(prev).forEach(key => {
+        const [touchedIndex] = key.split('-');
+        if (parseInt(touchedIndex) !== index) {
+          // Reindex if sibling index is greater than removed index
+          if (parseInt(touchedIndex) > index) {
+            const fieldName = key.split('-').slice(1).join('-');
+            newTouched[`${parseInt(touchedIndex) - 1}-${fieldName}`] = prev[key];
+          } else {
+            newTouched[key] = prev[key];
+          }
+        }
+      });
+      return newTouched;
     });
   };
 
@@ -91,12 +235,59 @@ const SiblingInformation = ({ onSuccess }) => {
         gender: "",
       } : sibling
     ));
+    
+    // Clear errors for this sibling
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[`${index}-fullName`];
+      delete newErrors[`${index}-relationType`];
+      delete newErrors[`${index}-class`];
+      delete newErrors[`${index}-gender`];
+      delete newErrors[`${index}-schoolName`];
+      return newErrors;
+    });
+    
+    // Clear touched state for this sibling
+    setTouched(prev => {
+      const newTouched = { ...prev };
+      delete newTouched[`${index}-fullName`];
+      delete newTouched[`${index}-relationType`];
+      delete newTouched[`${index}-class`];
+      delete newTouched[`${index}-gender`];
+      delete newTouched[`${index}-schoolName`];
+      return newTouched;
+    });
   };
 
   const handleFieldChange = (index, field, value) => {
-    setSiblings(prev => prev.map((sibling, i) => 
-      i === index ? { ...sibling, [field]: value } : sibling
-    ));
+    let processedValue = value;
+    
+    // Filter fullName and schoolName to accept only letters and spaces
+    if (field === 'fullName' || field === 'schoolName') {
+      // Remove numbers and special characters, keep only letters and spaces
+      const filteredValue = value.replace(/[^a-zA-Z\s]/g, '');
+      // Capitalize first letter of each word
+      processedValue = capitalizeWords(filteredValue);
+    }
+    
+    // Mark field as touched
+    setTouched(prev => ({
+      ...prev,
+      [`${index}-${field}`]: true,
+    }));
+    
+    setSiblings(prev => {
+      const updatedSiblings = prev.map((sibling, i) => 
+        i === index ? { ...sibling, [field]: processedValue } : sibling
+      );
+      
+      // Validate the updated sibling
+      if (updatedSiblings[index]) {
+        validateSibling(updatedSiblings[index], index);
+      }
+      
+      return updatedSiblings;
+    });
   };
 
   const handleAddAnnexure = () => {
@@ -152,16 +343,29 @@ const SiblingInformation = ({ onSuccess }) => {
                   </div>
                   <div className={styles.siblingFields}>
                     {fieldConfig.map((field) => {
+                      const fieldKey = `${i}-${field.name}`;
+                      const fieldError = errors[fieldKey];
+                      const fieldTouched = touched[fieldKey];
+                      const showError = fieldTouched && fieldError;
+                      
                       if (field.type === 'input') {
                         return (
-                          <Inputbox
-                            key={field.name}
-                            label={field.label}
-                            placeholder={field.placeholder}
-                            value={sibling[field.name] || ""}
-                            onChange={(e) => handleFieldChange(i, field.name, e.target.value)}
-                            required={field.required}
-                          />
+                          <div key={field.name}>
+                            <Inputbox
+                              label={field.label}
+                              placeholder={field.placeholder}
+                              value={sibling[field.name] || ""}
+                              onChange={(e) => handleFieldChange(i, field.name, e.target.value)}
+                              onBlur={() => setTouched(prev => ({ ...prev, [fieldKey]: true }))}
+                              error={showError}
+                              required={field.required}
+                            />
+                            {showError && (
+                              <div className={styles.Sibling_Info_Section_general_error}>
+                                {fieldError}
+                              </div>
+                            )}
+                          </div>
                         );
                       } else if (field.type === 'dropdown') {
                         const filteredOptions = field.filterOptions 
@@ -169,25 +373,33 @@ const SiblingInformation = ({ onSuccess }) => {
                           : field.options;
                         
                         return (
-                          <Dropdown
-                            key={field.name}
-                            dropdownname={field.label}
-                            results={filteredOptions.map(opt => opt.label)}
-                            value={field.options.find(opt => opt.id === sibling[field.name])?.label || ""}
-                            dropdownsearch={true}
-                            onChange={(e) => {
-                              const selectedLabel = e.target.value;
-                              const selectedOption = field.options.find(opt => opt.label === selectedLabel);
-                              handleFieldChange(i, field.name, selectedOption ? selectedOption.id : "");
-                            }}
-                            disabled={relationTypesLoading || studentClassesLoading || gendersLoading}
-                            loading={relationTypesLoading || studentClassesLoading || gendersLoading}
-                            placeholder={
-                              (relationTypesLoading || studentClassesLoading || gendersLoading) 
-                                ? "Loading..." 
-                                : "Select " + field.label
-                            }
-                          />
+                          <div key={field.name}>
+                            <Dropdown
+                              dropdownname={field.label}
+                              results={filteredOptions.map(opt => opt.label)}
+                              value={field.options.find(opt => opt.id === sibling[field.name])?.label || ""}
+                              dropdownsearch={true}
+                              onChange={(e) => {
+                                const selectedLabel = e.target.value;
+                                const selectedOption = field.options.find(opt => opt.label === selectedLabel);
+                                handleFieldChange(i, field.name, selectedOption ? selectedOption.id : "");
+                                setTouched(prev => ({ ...prev, [fieldKey]: true }));
+                              }}
+                              onBlur={() => setTouched(prev => ({ ...prev, [fieldKey]: true }))}
+                              disabled={relationTypesLoading || studentClassesLoading || gendersLoading}
+                              loading={relationTypesLoading || studentClassesLoading || gendersLoading}
+                              placeholder={
+                                (relationTypesLoading || studentClassesLoading || gendersLoading) 
+                                  ? "Loading..." 
+                                  : "Select " + field.label
+                              }
+                            />
+                            {showError && (
+                              <div className={styles.Sibling_Info_Section_general_error}>
+                                {fieldError}
+                              </div>
+                            )}
+                          </div>
                         );
                       }
                       return null;
@@ -294,6 +506,6 @@ const SiblingInformation = ({ onSuccess }) => {
       </div>
     </div>
   );
-};
+});
 
 export default SiblingInformation;

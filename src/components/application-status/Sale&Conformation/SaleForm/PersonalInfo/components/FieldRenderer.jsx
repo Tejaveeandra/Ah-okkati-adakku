@@ -5,6 +5,7 @@ import Dropdown from '../../../../../../widgets/Dropdown/Dropdown';
 import FormError from './FormError';
 import { ReactComponent as PhoneIcon } from '../../../../../../assets/application-status/PhoneIcon.svg';
 import { capitalizeWords } from '../../../../../../utils/textUtils';
+import personalInfoStyles from '../PersonalInformation.module.css';
 
 // Debug flag for conditional logging
 const DEBUG = process.env.NODE_ENV === 'development';
@@ -225,7 +226,7 @@ const FieldRenderer = ({
               // Phone number has special styling with icon
               if (field.name === "phoneNumber") {
                 return (
-                  <div style={{ position: 'relative' }}>
+                  <div className={personalInfoStyles.phone_icon_wrapper}>
                     <Inputbox
                       label={field.label}
                       id={field.id}
@@ -238,15 +239,7 @@ const FieldRenderer = ({
                       error={meta.touched && meta.error}
                       required={field.required}
                     />
-                    <div style={{ 
-                      position: 'absolute', 
-                      right: '12px', 
-                      top: '68%', 
-                      transform: 'translateY(-50%)',
-                      pointerEvents: 'none'
-                    }}>
-                      <PhoneIcon style={{ width: '16px', height: '16px', color: '#98A2B3' }} />
-                    </div>
+                    <PhoneIcon className={personalInfoStyles.phone_icon} />
                   </div>
                 );
               }

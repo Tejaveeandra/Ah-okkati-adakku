@@ -127,16 +127,6 @@ const StudentProfile = ({ applicationNumber, onProfileDataReceived }) => {
     >
       {({ values, setFieldValue, touched, errors }) => (
         <div className={styles.profileContainer}>
-          {/* Debug Box for StudentProfile */}
-          <div style={{background: 'green', color: 'white', padding: '10px', margin: '10px', borderRadius: '5px'}}>
-            🟢 DEBUG: StudentProfile Component is Rendered! 
-            <br/>Timestamp: {new Date().toISOString()}
-            <br/>ApplicationNumber: {applicationNumber}
-            <br/>Loading: {loading.toString()}
-            <br/>Error: {error || 'None'}
-            <br/>ProfileData: {profileData ? 'Loaded' : 'Not Loaded'}
-          </div>
-     
       {/* Top section: Profile Pic + Personal Info */}
       <div className={styles.headerSection}>
         <ProfilePhoto touched={touched} errors={errors} viewOnly={true} />

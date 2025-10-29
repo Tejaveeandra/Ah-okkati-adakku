@@ -74,3 +74,19 @@
   grid-column: span 3;
   width: 100%;
 }
+
+/* Phone Icon Styles */
+.phone_icon_wrapper {
+  position: relative;
+}
+
+.phone_icon {
+  position: absolute;
+  right: 10px;
+  top: 65%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: #82808f;
+  pointer-events: none;
+}

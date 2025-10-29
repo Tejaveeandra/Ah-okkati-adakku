@@ -33,9 +33,19 @@ export const validationSchema = Yup.object({
     .max(new Date(), "Date of Birth cannot be in the future")
     .test("age", "Age must be at least 5 years", function(value) {
       if (!value) return false;
+      
       const today = new Date();
       const birthDate = new Date(value);
-      const age = today.getFullYear() - birthDate.getFullYear();
+      
+      // Calculate exact age
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      
+      // If birthday hasn't occurred this year, subtract 1
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      
       return age >= 5;
     }),
   

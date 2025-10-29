@@ -13,6 +13,12 @@ import styles from './AddressFormField.module.css';
 const DEBUG = process.env.NODE_ENV === 'development';
 
 const AddressFormField = ({ field, values, handleChange, handleBlur, errors, touched, setFieldValue, externalErrors, onClearFieldError }) => {
+  // Debug logging for city field external errors
+  if (field.name === 'city') {
+    console.log('🔍 AddressFormField - City field externalErrors:', externalErrors);
+    console.log('🔍 AddressFormField - City field has addressCity error:', !!externalErrors.addressCity);
+    console.log('🔍 AddressFormField - City field addressCity error value:', externalErrors.addressCity);
+  }
   // Combined state for better performance
   const [dropdownState, setDropdownState] = useState({
     stateOptions: [],
@@ -404,8 +410,8 @@ const AddressFormField = ({ field, values, handleChange, handleBlur, errors, tou
   // Handle city change to store ID
   const handleCityChange = (e) => {
     // Clear external error for this field when user selects an option
-    if (onClearFieldError && externalErrors[field.name]) {
-      onClearFieldError(field.name);
+    if (onClearFieldError && (externalErrors[field.name] || externalErrors.addressCity)) {
+      onClearFieldError(field.name === 'city' ? 'addressCity' : field.name);
     }
     
     handleChange(e);
@@ -542,7 +548,14 @@ const AddressFormField = ({ field, values, handleChange, handleBlur, errors, tou
         touched={touched}
         errors={errors}
         className={styles.address_info_error}
-        externalErrors={externalErrors}
+        externalErrors={(() => {
+          if (field.name === 'city' && externalErrors.addressCity) {
+            const mappedErrors = { ...externalErrors, city: externalErrors.addressCity };
+            console.log('🔍 AddressFormField - Mapping addressCity to city:', mappedErrors);
+            return mappedErrors;
+          }
+          return externalErrors;
+        })()}
       />
     </div>
       

@@ -3,6 +3,15 @@ import DD from '../../../../../../assets/application-status/DD (1).svg';
 import Debit from '../../../../../../assets/application-status/Debit Card.svg';
 import Cheque from '../../../../../../assets/application-status/Cheque (1).svg';
 
+// Helper function to get today's date in YYYY-MM-DD format for date inputs
+const getTodayDate = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // Payment modes configuration
 export const paymentModes = [
   { label: "Cash", value: "Cash", icon: Cash },
@@ -18,13 +27,13 @@ export const initialValues = {
   appFeeReceived: true,
   
   // Cash fields
-  paymentDate: '',
+  paymentDate: getTodayDate(), // Default to today's date
   amount: '',
   mainDdSaleDate: '',
   receiptNumber: '',
   
   // DD fields
-  mainDdPayDate: '',
+  mainDdPayDate: getTodayDate(), // Default to today's date
   mainDdAmount: '',
   mainDdReceiptNumber: '',
   mainDdOrganisationName: '',
@@ -39,7 +48,7 @@ export const initialValues = {
   mainDdDate: '',
   
   // Cheque fields
-  mainChequePayDate: '',
+  mainChequePayDate: getTodayDate(), // Default to today's date
   mainChequeAmount: '',
   mainChequeSaleDate: '',
   mainChequeReceiptNumber: '',
@@ -55,7 +64,7 @@ export const initialValues = {
   mainChequeDate: '',
   
   // Credit/Debit Card fields
-  cardPayDate: '',
+  cardPayDate: getTodayDate(), // Default to today's date
   cardAmount: '',
   cardReceiptNumber: '',
   

@@ -21,7 +21,7 @@ const FormError = ({ error, showOnChange = false, touched, externalErrors = {}, 
       alignItems: 'center',
       gap: '4px'
     }}>
-      <span>⚠️</span>
+  
       <span>{errorMessage}</span>
     </div>
   );

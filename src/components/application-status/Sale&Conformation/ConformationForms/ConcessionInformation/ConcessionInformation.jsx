@@ -94,13 +94,32 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
       onClearFieldError(name);
     }
     
+    // List of concession amount fields that should only accept numbers
+    const concessionAmountFields = ['yearConcession1st', 'yearConcession2nd', 'yearConcession3rd', 'admissionFee', 'tuitionFee', 'concessionAmount'];
+    
+    // Filter to allow only numbers and decimal point for concession amount fields
+    let processedValue = value;
+    if (concessionAmountFields.includes(name)) {
+      // Remove all characters except numbers and decimal point
+      processedValue = value.replace(/[^0-9.]/g, '');
+      // Ensure only one decimal point
+      const parts = processedValue.split('.');
+      if (parts.length > 2) {
+        processedValue = parts[0] + '.' + parts.slice(1).join('');
+      }
+      // Prevent leading decimal point (allow "0.5" but not ".5")
+      if (processedValue.startsWith('.')) {
+        processedValue = '0' + processedValue;
+      }
+    }
+    
     // Check if this is a concession field
     const concessionTypeId = getConcessionTypeId(name);
     
     setFormData(prev => {
       const newData = {
         ...prev,
-        [name]: value
+        [name]: processedValue
       };
       
       // If this is a concession field, also store the concession type ID
@@ -300,7 +319,7 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                     alignItems: 'center',
                     gap: '4px'
                   }}>
-                    <span>⚠️</span>
+                   
                     <span>{externalErrors[field.name]}</span>
                   </div>
                 )}
@@ -327,7 +346,7 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                     alignItems: 'center',
                     gap: '4px'
                   }}>
-                    <span>⚠️</span>
+                  
                     <span>{externalErrors[field.name]}</span>
                   </div>
                 )}
@@ -381,7 +400,7 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                   alignItems: 'center',
                   gap: '4px'
                 }}>
-                  <span>⚠️</span>
+                 
                   <span>{externalErrors.concessionAmount}</span>
                 </div>
               )}
@@ -411,8 +430,8 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px'
-                }}>
-                  <span>⚠️</span>
+                }}> 
+                 
                   <span>{externalErrors.concessionWrittenBy}</span>
                 </div>
               )}
@@ -437,7 +456,7 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                   alignItems: 'center',
                   gap: '4px'
                 }}>
-                  <span>⚠️</span>
+                  
                   <span>{externalErrors.additionalReason}</span>
                 </div>
               )}

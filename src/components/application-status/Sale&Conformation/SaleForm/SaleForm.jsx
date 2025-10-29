@@ -53,6 +53,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [fieldWiseErrors, setFieldWiseErrors] = useState({});
+  const siblingInfoRef = useRef(null);
 
   const handlePaymentSuccess = (paymentData) => {
     console.log('🔄 handlePaymentSuccess called with payment data:', paymentData);
@@ -713,10 +714,40 @@ const SaleForm = ({ onBack, initialData = {} }) => {
   };
 
 
-  const handleNext = () => {
-    console.log('Next button clicked');
-    // Use the existing next step logic
-    handleNextStep();
+  const handleNext = async () => {
+    console.log('Next button clicked - validating Step 1 before proceeding');
+    
+    try {
+      // Validate Step 1 forms before proceeding
+      console.log('🔍 Validating Step 1 forms before proceeding to sale');
+      console.log('🔍 All Form Data for Step 1 validation:', allFormData);
+      
+      const step1ValidationResult = await validateAllForms(allFormData, 1, category);
+      console.log('🔍 Step 1 validation result:', step1ValidationResult);
+      
+      if (step1ValidationResult.isValid) {
+        console.log('✅ Step 1 validation passed - proceeding to next step');
+        // Clear any existing field-wise errors
+        setFieldWiseErrors({});
+        handleNextStep();
+      } else {
+        console.log('❌ Step 1 validation failed:', step1ValidationResult.errors);
+        
+        // Set field-wise errors for display
+        setFieldWiseErrors(step1ValidationResult.errors);
+        console.log('🔍 Setting field-wise errors:', step1ValidationResult.errors);
+        console.log('🔍 Field-wise errors keys:', Object.keys(step1ValidationResult.errors));
+        console.log('🔍 Field-wise errors count:', Object.keys(step1ValidationResult.errors).length);
+        console.log('🔍 Field-wise errors for dateOfBirth:', step1ValidationResult.errors.dateOfBirth);
+        console.log('🔍 Field-wise errors for admissionType:', step1ValidationResult.errors.admissionType);
+        
+        // Show user-friendly error message
+        const errorMessage = getMissingFieldsMessage(step1ValidationResult.errors);
+        console.log(`Please complete all required fields before proceeding to sale. Missing: ${errorMessage}`);
+      }
+    } catch (error) {
+      console.error('Validation error:', error);
+    }
   };
 
   const handleSingleButton = async () => {
@@ -794,6 +825,14 @@ const SaleForm = ({ onBack, initialData = {} }) => {
         console.log('🔍 Step 2 validation result:', step2ValidationResult);
       }
       
+      // Validate sibling information if we're on Step 2
+      let siblingValidationResult = { isValid: true, errors: {} };
+      if (currentStep === 2 && siblingInfoRef.current) {
+        console.log('🔍 Validating Sibling Information');
+        siblingValidationResult = siblingInfoRef.current.validate();
+        console.log('🔍 Sibling validation result:', siblingValidationResult);
+      }
+      
       // Only validate orientation fields if we're on Step 1 (Sale)
       let orientationErrors = {};
       if (currentStep === 1 && orientationValidationFn) {
@@ -805,12 +844,14 @@ const SaleForm = ({ onBack, initialData = {} }) => {
       const allErrors = { 
         ...step1ValidationResult.errors, 
         ...step2ValidationResult.errors, 
+        ...siblingValidationResult.errors,
         ...orientationErrors 
       };
       
       // Check if all validations pass
       const isValid = step1ValidationResult.isValid && 
                      step2ValidationResult.isValid && 
+                     siblingValidationResult.isValid &&
                      Object.keys(orientationErrors).length === 0;
       
       console.log('Combined validation result:', { isValid, allErrors });
@@ -828,6 +869,8 @@ const SaleForm = ({ onBack, initialData = {} }) => {
         console.log('🔍 Setting field-wise errors:', allErrors);
         console.log('🔍 Field-wise errors keys:', Object.keys(allErrors));
         console.log('🔍 Field-wise errors count:', Object.keys(allErrors).length);
+        console.log('🔍 Field-wise errors for dateOfBirth:', allErrors.dateOfBirth);
+        console.log('🔍 Field-wise errors for admissionType:', allErrors.admissionType);
         
         // Show user-friendly error message
         const errorMessage = getMissingFieldsMessage(allErrors);
@@ -964,7 +1007,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
               </div>
               
               <div className={styles.saleFormSection}>
-                <SiblingInformation onSuccess={handleSiblingInfoSuccess} />
+                <SiblingInformation ref={siblingInfoRef} onSuccess={handleSiblingInfoSuccess} />
               </div>
               
               <div className={styles.saleFormSection}>
@@ -992,7 +1035,15 @@ const SaleForm = ({ onBack, initialData = {} }) => {
           <div className={styles.saleFormSection}>
             <EditNextButtons 
               onEdit={handleEdit}
-              onNext={handleNext}
+              onNext={() => {
+                // In confirmation mode, just proceed to next step without validation
+                if (currentStep === 1) {
+                  console.log('🔍 Confirmation mode - proceeding to next step without validation');
+                  handleNextStep();
+                } else {
+                  handleNext();
+                }
+              }}
               showSingleButton={currentStep === 2}
               singleButtonText="Proceed to payment"
               onSingleButtonClick={handleSingleButton}
@@ -1018,11 +1069,11 @@ const SaleForm = ({ onBack, initialData = {} }) => {
           <div className={styles.saleFormSection}>
             {/* Debug Box for PersonalInformation */}
         
-            <PersonalInformation 
-              onSuccess={handlePersonalInfoSuccess} 
+            <PersonalInformation
+              onSuccess={handlePersonalInfoSuccess}
               externalErrors={Object.fromEntries(
-                Object.entries(fieldWiseErrors).filter(([key]) => 
-                  ['firstName', 'surname', 'gender', 'aaparNo', 'aadharCardNo', 'quota', 'admissionType', 'phoneNumber', 'fatherName'].includes(key)
+                Object.entries(fieldWiseErrors).filter(([key]) =>
+                  ['firstName', 'surname', 'gender', 'aaparNo', 'dateOfBirth', 'aadharCardNo', 'quota', 'admissionType', 'phoneNumber', 'fatherName'].includes(key)
                 )
               )}
               onClearFieldError={clearSpecificFieldError}
@@ -1052,15 +1103,15 @@ const SaleForm = ({ onBack, initialData = {} }) => {
           <div className={styles.saleFormSection}>
             {/* Debug Box for AddressInformation */}
            
-            <AddressInformation 
-              onSuccess={handleAddressInfoSuccess} 
-              externalErrors={Object.fromEntries(
-                Object.entries(fieldWiseErrors).filter(([key]) => 
-                  ['doorNo', 'streetName', 'area', 'pincode', 'mandal', 'addressCity'].includes(key)
-                )
-              )}
-              onClearFieldError={clearSpecificFieldError}
-            />
+        <AddressInformation 
+          onSuccess={handleAddressInfoSuccess} 
+          externalErrors={Object.fromEntries(
+            Object.entries(fieldWiseErrors).filter(([key]) => 
+              ['doorNo', 'streetName', 'area', 'pincode', 'mandal', 'addressCity'].includes(key)
+            )
+          )}
+          onClearFieldError={clearSpecificFieldError}
+        />
           </div>
           
           {/* Action Buttons */}

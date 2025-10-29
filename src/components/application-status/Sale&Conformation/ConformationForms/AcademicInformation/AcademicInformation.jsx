@@ -39,6 +39,9 @@ const AcademicInformation = ({ profileData, onSuccess, category = 'COLLEGE', ext
     orientationNameId: '' // Add orientation ID field for backend
   });
 
+  // Track if orientationFee has been manually edited
+  const [isOrientationFeeEdited, setIsOrientationFeeEdited] = useState(false);
+
   // Extract campusId and classId from profile data
   const campusId = profileData?.branchId || null;
   const classId = profileData?.joiningClassId || null;
@@ -132,16 +135,29 @@ const AcademicInformation = ({ profileData, onSuccess, category = 'COLLEGE', ext
       const formattedStartDate = formatDateForInput(startDate);
       const formattedEndDate = formatDateForInput(endDate);
       
-      setFormData(prev => ({
-        ...prev,
-        orientationStartDates: formattedStartDate,
-        orientationEndDates: formattedEndDate,
-        orientationFee: comboDetails.fee || comboDetails.orientationFee || comboDetails.orientation_fee || '0.0'
-      }));
+      setFormData(prev => {
+        const updateData = {
+          ...prev,
+          orientationStartDates: formattedStartDate,
+          orientationEndDates: formattedEndDate
+        };
+        
+        // Only auto-populate orientationFee if it hasn't been manually edited
+        if (!isOrientationFeeEdited) {
+          const fee = comboDetails.fee || comboDetails.orientationFee || comboDetails.orientation_fee || '0.0';
+          // Only update if field is empty or has default value
+          if (!prev.orientationFee || prev.orientationFee === '0.0' || prev.orientationFee === '') {
+            updateData.orientationFee = fee;
+          }
+        }
+        
+        return updateData;
+      });
     }
-  }, [comboDetails]);
+  }, [comboDetails, isOrientationFeeEdited]);
 
   // Auto-populate orientation fee for SCHOOL category when orientation fee is loaded
+  // Only auto-populate if field is empty or hasn't been manually edited
   React.useEffect(() => {
     console.log('🔄 Orientation Fee useEffect triggered:', {
       category: category,
@@ -150,10 +166,12 @@ const AcademicInformation = ({ profileData, onSuccess, category = 'COLLEGE', ext
       orientationFee: orientationFee,
       orientationFeeExists: !!orientationFee,
       orientationFeeType: typeof orientationFee,
-      orientationFeeStringified: JSON.stringify(orientationFee)
+      orientationFeeStringified: JSON.stringify(orientationFee),
+      isOrientationFeeEdited: isOrientationFeeEdited,
+      currentOrientationFee: formData.orientationFee
     });
     
-    if (category?.toUpperCase() === 'SCHOOL' && orientationFee) {
+    if (category?.toUpperCase() === 'SCHOOL' && orientationFee && !isOrientationFeeEdited) {
       console.log('🏫 SCHOOL category - updating orientation fee from API:', orientationFee);
       
       // Extract fee from response - check nested data structure
@@ -179,15 +197,20 @@ const AcademicInformation = ({ profileData, onSuccess, category = 'COLLEGE', ext
         'finalFee': fee
       });
       
+      // Only auto-populate if field is empty or has default value
       setFormData(prev => {
-        console.log('📝 Setting form data - previous orientationFee:', prev.orientationFee, 'new fee:', fee);
-        return {
-          ...prev,
-          orientationFee: fee
-        };
+        const shouldUpdate = !prev.orientationFee || prev.orientationFee === '0.0' || prev.orientationFee === '';
+        console.log('📝 Setting form data - previous orientationFee:', prev.orientationFee, 'new fee:', fee, 'shouldUpdate:', shouldUpdate);
+        if (shouldUpdate) {
+          return {
+            ...prev,
+            orientationFee: fee
+          };
+        }
+        return prev;
       });
     }
-  }, [orientationFee, category]);
+  }, [orientationFee, category, isOrientationFeeEdited]);
 
 
   // Test function to manually test the food types API
@@ -211,6 +234,11 @@ const AcademicInformation = ({ profileData, onSuccess, category = 'COLLEGE', ext
     // Clear external error if it exists
     if (externalErrors[name] && onClearFieldError) {
       onClearFieldError(name);
+    }
+    
+    // Track if orientationFee is being manually edited
+    if (name === 'orientationFee') {
+      setIsOrientationFeeEdited(true);
     }
     
     setFormData(prev => ({
@@ -239,6 +267,9 @@ const AcademicInformation = ({ profileData, onSuccess, category = 'COLLEGE', ext
         category: category,
         allOrientations: orientations
       });
+      
+      // Reset orientation fee edited flag when orientation changes so new fee can auto-populate
+      setIsOrientationFeeEdited(false);
       
       setFormData(prev => ({
         ...prev,
@@ -553,7 +584,7 @@ const AcademicInformation = ({ profileData, onSuccess, category = 'COLLEGE', ext
                     alignItems: 'center',
                     gap: '4px'
                   }}>
-                    <span>⚠️</span>
+                 
                     <span>{externalErrors[field.name]}</span>
                   </div>
                 )}
@@ -580,7 +611,7 @@ const AcademicInformation = ({ profileData, onSuccess, category = 'COLLEGE', ext
                     alignItems: 'center',
                     gap: '4px'
                   }}>
-                    <span>⚠️</span>
+                
                     <span>{externalErrors[field.name]}</span>
                   </div>
                 )}

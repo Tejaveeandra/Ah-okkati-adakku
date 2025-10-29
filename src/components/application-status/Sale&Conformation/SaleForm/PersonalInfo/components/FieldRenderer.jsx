@@ -156,10 +156,25 @@ const FieldRenderer = ({
             const selectedOption = options.find(option => option.value === values[field.name]);
             const displayValue = selectedOption ? selectedOption.label : values[field.name] || "";
             
+            // Debug logging for admission type field
+            if (field.name === 'admissionType') {
+              console.log('🔍 FieldRenderer - admissionType field debug:');
+              console.log('🔍 FieldRenderer - field.name:', field.name);
+              console.log('🔍 FieldRenderer - values[field.name]:', values[field.name]);
+              console.log('🔍 FieldRenderer - options:', options);
+              console.log('🔍 FieldRenderer - selectedOption:', selectedOption);
+              console.log('🔍 FieldRenderer - displayValue:', displayValue);
+              console.log('🔍 FieldRenderer - stringOptions:', stringOptions);
+            }
+            
             // Custom onChange handler for dropdowns to store the value (ID) instead of label
             const handleDropdownChange = (e) => {
               const selectedLabel = e.target.value;
+              console.log('🔍 Dropdown change - Field:', field.name, 'Selected label:', selectedLabel);
+              console.log('🔍 Available options:', options);
+              
               const selectedOption = options.find(option => option.label === selectedLabel);
+              console.log('🔍 Found selected option:', selectedOption);
               
               // Clear external error for this field when user selects an option
               if (onClearFieldError && externalErrors[field.name]) {
@@ -167,6 +182,7 @@ const FieldRenderer = ({
               }
               
               if (selectedOption) {
+                console.log('🔍 Storing value:', selectedOption.value, 'for field:', field.name);
                 // Store the value (ID) instead of the label
                 handleChange({
                   target: {
@@ -174,6 +190,13 @@ const FieldRenderer = ({
                     value: selectedOption.value
                   }
                 });
+                
+                // Also update Formik's field value directly to ensure it's properly tracked
+                if (setFieldValue) {
+                  setFieldValue(field.name, selectedOption.value);
+                }
+              } else {
+                console.log('❌ No matching option found for label:', selectedLabel);
               }
             };
             

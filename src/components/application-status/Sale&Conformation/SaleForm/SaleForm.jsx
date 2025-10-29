@@ -651,6 +651,8 @@ const SaleForm = ({ onBack, initialData = {} }) => {
   // Handle form data updates from child components
   const handlePersonalInfoSuccess = (data) => {
     console.log('🔄 Personal Info Success - Adding to single object:', data);
+    console.log('🔄 Personal Info Success - admissionType in data:', data.admissionType);
+    console.log('🔄 Personal Info Success - typeof admissionType:', typeof data.admissionType);
     addFormData(data);
   };
 
@@ -768,6 +770,9 @@ const SaleForm = ({ onBack, initialData = {} }) => {
           admissionType: allFormData.admissionType,
           phoneNumber: allFormData.phoneNumber
         });
+        console.log('🔍 DEBUG - allFormData.admissionType:', allFormData.admissionType);
+        console.log('🔍 DEBUG - typeof allFormData.admissionType:', typeof allFormData.admissionType);
+        console.log('🔍 DEBUG - allFormData keys:', Object.keys(allFormData));
         console.log('🔍 Address Information fields in allFormData:', {
           doorNo: allFormData.doorNo,
           streetName: allFormData.streetName,

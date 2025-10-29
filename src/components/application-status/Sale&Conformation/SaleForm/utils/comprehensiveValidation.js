@@ -336,6 +336,10 @@ export const validateAllForms = async (formData, currentStep = 2, category = 'CO
       try {
         console.log('Validating Step 1 forms (Personal + Orientation + Address)');
         console.log('🔍 Step 1 fields being validated:', step1Fields);
+        console.log('🔍 admissionType debug - formData.admissionType:', formData.admissionType);
+        console.log('🔍 admissionType debug - typeof formData.admissionType:', typeof formData.admissionType);
+        console.log('🔍 admissionType debug - step1Fields.admissionType:', step1Fields.admissionType);
+        console.log('🔍 admissionType debug - typeof step1Fields.admissionType:', typeof step1Fields.admissionType);
         
         await Yup.object({
           // Personal Information fields
@@ -345,7 +349,9 @@ export const validateAllForms = async (formData, currentStep = 2, category = 'CO
           aaparNo: Yup.string().trim().required(),
           aadharCardNo: Yup.string().trim().matches(/^\d{12}$/).required(),
           quota: Yup.string().required(),
-          admissionType: Yup.string().required(),
+          admissionType: Yup.mixed().test('required', 'Admission Type is required', function(value) {
+            return value !== undefined && value !== null && value !== '';
+          }),
           phoneNumber: Yup.string().trim().matches(/^[6-9]\d{9}$/).required(),
           fatherName: Yup.string().trim().min(2).max(50).matches(/^[A-Za-z\s]+$/).required(),
           // Orientation Information fields

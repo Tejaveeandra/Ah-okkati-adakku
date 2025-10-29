@@ -83,13 +83,42 @@ const BasicInfo = ({
                     dropdownname={field.label}
                     id={field.id}
                     name={field.name}
-                    value={values[field.name] || ""}
+                    value={(() => {
+                      if (field.name === 'admissionType' && values[field.name]) {
+                        // For admission type, display the label instead of the stored value (ID)
+                        const selectedOption = options.find(option => option.value === values[field.name]);
+                        return selectedOption ? selectedOption.label : values[field.name];
+                      }
+                      return values[field.name] || "";
+                    })()}
                     onChange={(e) => {
                       // Clear external error for this field when user selects an option
                       if (onClearFieldError && externalErrors[field.name]) {
                         onClearFieldError(field.name);
                       }
-                      handleChange(e);
+                      
+                      // For admission type, we need to find the corresponding value (ID) for the selected label
+                      if (field.name === 'admissionType') {
+                        const selectedOption = options.find(option => option.label === e.target.value);
+                        const actualValue = selectedOption ? selectedOption.value : e.target.value;
+                        
+                        // Create a new event with the actual value (ID) instead of the label
+                        const modifiedEvent = {
+                          ...e,
+                          target: {
+                            ...e.target,
+                            value: actualValue
+                          }
+                        };
+                        handleChange(modifiedEvent);
+                        
+                        // Also update Formik's field value directly to ensure it's properly tracked
+                        if (setFieldValue) {
+                          setFieldValue(field.name, actualValue);
+                        }
+                      } else {
+                        handleChange(e);
+                      }
                     }}
                     results={stringOptions}
                     required={field.required}

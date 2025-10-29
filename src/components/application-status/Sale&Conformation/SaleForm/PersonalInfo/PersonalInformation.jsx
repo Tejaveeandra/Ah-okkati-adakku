@@ -27,14 +27,33 @@ const PersonalInformation = ({ onSuccess, externalErrors = {}, onClearFieldError
     error: dropdownError 
   } = useDropdownData();
 
+  // Debug logging for admission type options
+  console.log('🔍 PersonalInformation - admissionTypeOptions:', admissionTypeOptions);
+  console.log('🔍 PersonalInformation - admissionTypeOptions length:', admissionTypeOptions?.length);
+  console.log('🔍 PersonalInformation - dropdownLoading:', dropdownLoading);
+  console.log('🔍 PersonalInformation - dropdownError:', dropdownError);
+
   // Track previous values to detect changes
   const [previousValues, setPreviousValues] = useState(initialValues);
   // Track if form has been submitted to show validation errors
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  // Force update parent with current values whenever admissionType changes
+  useEffect(() => {
+    if (onSuccess && previousValues.admissionType !== undefined) {
+      console.log('🔍 PersonalInformation - useEffect triggered, calling onSuccess with previousValues:', previousValues);
+      onSuccess(previousValues);
+    }
+  }, [previousValues.admissionType, onSuccess]);
+
   // Custom validation function for conditional fields
   const customValidate = (values) => {
     const errors = {};
+
+    // Debug logging for admission type validation
+    console.log('🔍 customValidate - values.admissionType:', values.admissionType);
+    console.log('🔍 customValidate - admissionTypeOptions:', admissionTypeOptions);
+    console.log('🔍 customValidate - values:', values);
 
     // Check if employeeId should be required (when Staff children quota is selected)
     const selectedQuotaOption = quotaOptions.find(option => option.value === values.quota);
@@ -47,6 +66,9 @@ const PersonalInformation = ({ onSuccess, externalErrors = {}, onClearFieldError
     // Check if proReceiptNo should be required (when "with pro" admission type is selected)
     const selectedAdmissionTypeOption = admissionTypeOptions.find(option => option.value === values.admissionType);
     const selectedAdmissionTypeLabel = selectedAdmissionTypeOption?.label;
+    console.log('🔍 customValidate - selectedAdmissionTypeOption:', selectedAdmissionTypeOption);
+    console.log('🔍 customValidate - selectedAdmissionTypeLabel:', selectedAdmissionTypeLabel);
+    
     const isWithProSelected = selectedAdmissionTypeLabel === "with pro" || 
                               selectedAdmissionTypeLabel === "With Pro" || 
                               selectedAdmissionTypeLabel === "With pro";
@@ -58,6 +80,7 @@ const PersonalInformation = ({ onSuccess, externalErrors = {}, onClearFieldError
       errors.proReceiptNo = "PRO Receipt No is required when admission type is 'with pro'";
     }
 
+    console.log('🔍 customValidate - errors:', errors);
     return errors;
   };
 
@@ -66,6 +89,9 @@ const PersonalInformation = ({ onSuccess, externalErrors = {}, onClearFieldError
     // Check if values have actually changed
     const hasChanged = JSON.stringify(values) !== JSON.stringify(previousValues);
     if (hasChanged && onSuccess) {
+      console.log('🔍 PersonalInformation - handleValuesChange called with values:', values);
+      console.log('🔍 PersonalInformation - admissionType in values:', values.admissionType);
+      console.log('🔍 PersonalInformation - typeof admissionType:', typeof values.admissionType);
       onSuccess(values);
       setPreviousValues(values);
     }

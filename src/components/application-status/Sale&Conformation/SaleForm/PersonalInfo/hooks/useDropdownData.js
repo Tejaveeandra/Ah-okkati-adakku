@@ -39,9 +39,15 @@ export const useDropdownData = () => {
 
       // Try to fetch admission types
       try {
+        console.log('🔍 Fetching admission types...');
         admissionTypes = await saleApi.getAdmissionTypes();
+        console.log('🔍 Admission types API response:', admissionTypes);
+        console.log('🔍 Admission types type:', typeof admissionTypes);
+        console.log('🔍 Admission types is array:', Array.isArray(admissionTypes));
+        console.log('🔍 Admission types length:', admissionTypes?.length);
       } catch (err) {
-        console.error('Error fetching admission types:', err);
+        console.error('❌ Error fetching admission types:', err);
+        console.error('❌ Error details:', err.response?.data);
         // Use empty array as fallback
         admissionTypes = [];
       }
@@ -91,6 +97,21 @@ export const useDropdownData = () => {
         value: item.adms_type_id || item.id,
         label: item.adms_type_name || item.name || item.typeName || item.title
       }));
+
+      console.log('🔍 Transformed admission types:', transformedAdmissionTypes);
+      console.log('🔍 Transformed admission types length:', transformedAdmissionTypes.length);
+      
+      // Fallback: If no admission types were fetched, use hardcoded values
+      if (transformedAdmissionTypes.length === 0) {
+        console.log('⚠️ No admission types from API, using fallback values');
+        transformedAdmissionTypes.push(
+          { value: '1', label: 'Direct walkin' },
+          { value: '2', label: 'with pro' },
+          { value: '3', label: 'Regular' },
+          { value: '4', label: 'Lateral' }
+        );
+        console.log('🔍 Using fallback admission types:', transformedAdmissionTypes);
+      }
 
 
       const transformedGenders = genders.map(item => ({

@@ -254,7 +254,7 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
     {
       type: 'dropdown',
       name: 'givenBy',
-      label: 'Given By',
+      label: 'Refered By',
       placeholder: authorizedByLoading ? 'Loading...' : (authorizedByError ? 'Error loading data' : (authorizedBy?.length === 0 ? 'No data available' : 'Select name')),
       options: authorizedByLoading ? [] : (authorizedBy?.map(auth => auth.label) || []),
       loading: authorizedByLoading,
@@ -352,12 +352,6 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                 )}
               </>
             )}
-            {/* Debug info for dropdown fields */}
-            {field.type === 'dropdown' && (
-              <div style={{fontSize: '10px', color: '#666', marginTop: '2px'}}>
-                Debug: {field.name} - Options: {field.options?.length || 0}, Loading: {field.loading ? 'Yes' : 'No'}, Error: {field.error || 'None'}
-              </div>
-            )}
           </div>
         ))}
       </div>
@@ -418,10 +412,6 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                 loading={authorizedByLoading}
                 placeholder={authorizedByLoading ? 'Loading...' : (authorizedByError ? 'Error loading data' : (authorizedBy?.length === 0 ? 'No data available' : 'Select name'))}
               />
-              {/* Debug info */}
-              <div style={{fontSize: '10px', color: '#666', marginTop: '2px'}}>
-                Debug: concessionWrittenBy - Options: {authorizedBy?.length || 0}, Loading: {authorizedByLoading ? 'Yes' : 'No'}, Error: {authorizedByError || 'None'}
-              </div>
               {externalErrors.concessionWrittenBy && (
                 <div style={{ 
                   color: '#dc2626', 

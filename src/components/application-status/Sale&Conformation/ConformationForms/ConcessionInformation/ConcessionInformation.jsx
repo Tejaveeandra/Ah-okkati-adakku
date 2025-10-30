@@ -4,7 +4,7 @@ import Dropdown from '../../../../../widgets/Dropdown/Dropdown';
 import { useAuthorizedBy, useConcessionReasons, useConcessionTypes } from '../hooks/useConfirmationData';
 import styles from './ConcessionInformation.module.css';
  
-const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors = {}, onClearFieldError }) => {
+const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors = {}, onClearFieldError, orientationFee = 0 }) => {
   // Debug logging for category
   console.log('🏫 ConcessionInformation Category Debug:', {
     receivedCategory: category,
@@ -191,12 +191,44 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
     }));
   };
  
-  // Update parent when form data changes (prevent infinite loop)
+  // 1. Accept orientationFee as a prop
+  // 2. Add local validation error state
+  const [concessionError, setConcessionError] = useState("");
+
+  // 3. Add validation effect whenever formData changes
   useEffect(() => {
-    if (onSuccess && Object.keys(formData).length > 0) {
+    let totalConcession = 0;
+    if (category.toUpperCase() === "SCHOOL") {
+      totalConcession =
+        parseFloat(formData.admissionFee || 0) +
+        parseFloat(formData.tuitionFee || 0);
+    } else if (category.toUpperCase() === "COLLEGE") {
+      totalConcession =
+        parseFloat(formData.yearConcession1st || 0) +
+        parseFloat(formData.yearConcession2nd || 0);
+    } else if (category.toUpperCase() === "DEGREE") {
+      totalConcession =
+        parseFloat(formData.yearConcession1st || 0) +
+        parseFloat(formData.yearConcession2nd || 0) +
+        parseFloat(formData.yearConcession3rd || 0);
+    }
+    if (orientationFee && Number(totalConcession) > Number(orientationFee)) {
+      setConcessionError(
+        `Total concession (${totalConcession}) cannot exceed Orientation Fee (${orientationFee})`
+      );
+    } else {
+      setConcessionError("");
+    }
+  }, [formData, orientationFee, category]);
+
+  // 4. Prevent propagate to parent if error
+  useEffect(() => {
+    if (onSuccess && !concessionError && Object.keys(formData).length > 0) {
       onSuccess(formData);
     }
-  }, [formData]);
+    // Else: Do not call onSuccess if error
+    // eslint-disable-next-line
+  }, [formData, concessionError]);
  
   // Function to get concession fields based on category
   const getConcessionFields = () => {
@@ -313,6 +345,10 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
       data: authorizedBy // Store the full data for ID mapping
     }] : [])
   ];
+
+  const descriptionIndex = fields.findIndex(field => field.name === 'description');
+  const beforeDescriptionFields = descriptionIndex !== -1 ? fields.slice(0, descriptionIndex) : fields;
+  const afterDescriptionFields = descriptionIndex !== -1 ? fields.slice(descriptionIndex) : [];
  
   return (
     <div className={styles.concession_information_container}>
@@ -322,7 +358,78 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
       </div>
      
       <div className={styles.concession_form_grid}>
-        {fields.map((field, index) => (
+        {beforeDescriptionFields.map((field, index) => (
+          <div key={field.name} className={styles.concession_field_wrapper}>
+            {field.type === 'input' ? (
+              <>
+                <Inputbox
+                  label={field.label}
+                  id={field.name}
+                  name={field.name}
+                  placeholder={field.placeholder}
+                  value={formData[field.name] || ''}
+                  onChange={handleInputChange}
+                  type="text"
+                />
+                {externalErrors[field.name] && (
+                  <div style={{
+                    color: '#dc2626',
+                    fontSize: '12px',
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                   
+                    <span>{externalErrors[field.name]}</span>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <Dropdown
+                  dropdownname={field.label}
+                  name={field.name}
+                  results={field.options}
+                  value={formData[field.name] || ''}
+                  onChange={handleDropdownChange}
+                  dropdownsearch={true}
+                  disabled={field.loading}
+                  loading={field.loading}
+                  placeholder={field.placeholder}
+                />
+                {externalErrors[field.name] && (
+                  <div style={{
+                    color: '#dc2626',
+                    fontSize: '12px',
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                 
+                    <span>{externalErrors[field.name]}</span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ))}
+        {/* Show local validation error above the description field */}
+        {concessionError && (
+          <div
+            style={{
+              gridColumn: '1 / -1',
+              color: '#dc2626',
+              fontSize: '14px',
+              marginBottom: '8px',
+              padding: '4px 0'
+            }}
+          >
+            {concessionError}
+          </div>
+        )}
+        {afterDescriptionFields.map((field, index) => (
           <div key={field.name} className={styles.concession_field_wrapper}>
             {field.type === 'input' ? (
               <>
@@ -381,104 +488,106 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
         ))}
       </div>
  
-      {/* Additional Concession Section */}
-      <div className={styles.additional_concession_section}>
-        <div className={styles.concession_checkbox_wrapper}>
-          <label className={styles.concession_checkbox_label}>
-            <input
-              type="checkbox"
-              name="additionalConcession"
-              checked={formData.additionalConcession}
-              onChange={handleCheckboxChange}
-              className={styles.concession_checkbox}
-            />
-            <span className={styles.concession_checkmark}></span>
-            Additional Concession Written on Application
-          </label>
-          <div className={styles.concession_line}></div>
-        </div>
- 
-        {formData.additionalConcession && (
-          <div className={styles.additional_concession_fields}>
-            <div className={styles.concession_field_wrapper}>
-              <Inputbox
-                label="Concession Amount"
-                id="concessionAmount"
-                name="concessionAmount"
-                placeholder="Enter Concession amount"
-                value={formData.concessionAmount}
-                onChange={handleInputChange}
-                type="text"
+      {/* Additional Concession Section - Hide for SCHOOL category */}
+      {category.toUpperCase() !== 'SCHOOL' && (
+        <div className={styles.additional_concession_section}>
+          <div className={styles.concession_checkbox_wrapper}>
+            <label className={styles.concession_checkbox_label}>
+              <input
+                type="checkbox"
+                name="additionalConcession"
+                checked={formData.additionalConcession}
+                onChange={handleCheckboxChange}
+                className={styles.concession_checkbox}
               />
-              {externalErrors.concessionAmount && (
-                <div style={{
-                  color: '#dc2626',
-                  fontSize: '12px',
-                  marginTop: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}>
-                 
-                  <span>{externalErrors.concessionAmount}</span>
-                </div>
-              )}
-            </div>
-           
-            <div className={styles.concession_field_wrapper}>
-              <Dropdown
-                dropdownname="Concession Written By"
-                name="concessionWrittenBy"
-                results={authorizedBy?.map(auth => auth.label) || []}
-                value={formData.concessionWrittenBy}
-                onChange={handleDropdownChange}
-                dropdownsearch={true}
-                disabled={authorizedByLoading}
-                loading={authorizedByLoading}
-                placeholder={authorizedByLoading ? 'Loading...' : (authorizedByError ? 'Error loading data' : (authorizedBy?.length === 0 ? 'No data available' : 'Select name'))}
-              />
-              {externalErrors.concessionWrittenBy && (
-                <div style={{
-                  color: '#dc2626',
-                  fontSize: '12px',
-                  marginTop: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}>
-                 
-                  <span>{externalErrors.concessionWrittenBy}</span>
-                </div>
-              )}
-            </div>
-           
-            <div className={styles.concession_field_wrapper}>
-              <Inputbox
-                label="Reason"
-                id="additionalReason"
-                name="additionalReason"
-                placeholder="Enter Reason"
-                value={formData.additionalReason}
-                onChange={handleInputChange}
-                type="text"
-              />
-              {externalErrors.additionalReason && (
-                <div style={{
-                  color: '#dc2626',
-                  fontSize: '12px',
-                  marginTop: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}>
-                 
-                  <span>{externalErrors.additionalReason}</span>
-                </div>
-              )}
-            </div>
+              <span className={styles.concession_checkmark}></span>
+              Additional Concession Written on Application
+            </label>
+            <div className={styles.concession_line}></div>
           </div>
-        )}
-      </div>
+ 
+          {formData.additionalConcession && (
+            <div className={styles.additional_concession_fields}>
+              <div className={styles.concession_field_wrapper}>
+                <Inputbox
+                  label="Concession Amount"
+                  id="concessionAmount"
+                  name="concessionAmount"
+                  placeholder="Enter Concession amount"
+                  value={formData.concessionAmount}
+                  onChange={handleInputChange}
+                  type="text"
+                />
+                {externalErrors.concessionAmount && (
+                  <div style={{
+                    color: '#dc2626',
+                    fontSize: '12px',
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                   
+                    <span>{externalErrors.concessionAmount}</span>
+                  </div>
+                )}
+              </div>
+             
+              <div className={styles.concession_field_wrapper}>
+                <Dropdown
+                  dropdownname="Concession Written By"
+                  name="concessionWrittenBy"
+                  results={authorizedBy?.map(auth => auth.label) || []}
+                  value={formData.concessionWrittenBy}
+                  onChange={handleDropdownChange}
+                  dropdownsearch={true}
+                  disabled={authorizedByLoading}
+                  loading={authorizedByLoading}
+                  placeholder={authorizedByLoading ? 'Loading...' : (authorizedByError ? 'Error loading data' : (authorizedBy?.length === 0 ? 'No data available' : 'Select name'))}
+                />
+                {externalErrors.concessionWrittenBy && (
+                  <div style={{
+                    color: '#dc2626',
+                    fontSize: '12px',
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                   
+                    <span>{externalErrors.concessionWrittenBy}</span>
+                  </div>
+                )}
+              </div>
+             
+              <div className={styles.concession_field_wrapper}>
+                <Inputbox
+                  label="Reason"
+                  id="additionalReason"
+                  name="additionalReason"
+                  placeholder="Enter Reason"
+                  value={formData.additionalReason}
+                  onChange={handleInputChange}
+                  type="text"
+                />
+                {externalErrors.additionalReason && (
+                  <div style={{
+                    color: '#dc2626',
+                    fontSize: '12px',
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                   
+                    <span>{externalErrors.additionalReason}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

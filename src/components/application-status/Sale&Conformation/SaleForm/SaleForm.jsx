@@ -1042,6 +1042,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
               <div className={styles.saleFormSection}>
                 <ConcessionInformation 
                   category={category} 
+                  orientationFee={allFormData.orientationFee || 0}
                   onSuccess={handleConcessionInfoSuccess}
                   externalErrors={fieldWiseErrors}
                   onClearFieldError={clearSpecificFieldError}

@@ -7,7 +7,7 @@ import OrientationFormTitle from "./components/OrientationFormTitle";
 import OrientationFormGrid from "./components/OrientationFormGrid";
 import styles from "./OrientationInformation.module.css";
 
-const OrientationInformation = ({ onSuccess, externalErrors = {}, onClearFieldError, onValidationRef, allFormData, academicYear, academicYearId }) => {
+const OrientationInformation = ({ onSuccess, externalErrors = {}, onClearFieldError, onValidationRef, allFormData, academicYear, academicYearId, initialValuesOverride }) => {
   // Debug logging for external errors
   console.log('🔍 OrientationInformation received externalErrors:', externalErrors);
   
@@ -24,6 +24,7 @@ const OrientationInformation = ({ onSuccess, externalErrors = {}, onClearFieldEr
     // Priority: Props > localStorage > initialValues
     return {
       ...initialValues,
+      ...(initialValuesOverride || {}),
       academicYear: academicYear || academicYearFromStorage || initialValues.academicYear,
       academicYearId: academicYearId || academicYearIdFromStorage || null
     };

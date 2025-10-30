@@ -7,7 +7,7 @@ import AddressFormTitle from "./components/AddressFormTitle";
 import AddressFormGrid from "./components/AddressFormGrid";
 import styles from "./AddressInformation.module.css";
 
-const AddressInformation = ({ onSuccess, externalErrors = {}, onClearFieldError }) => {
+const AddressInformation = ({ onSuccess, externalErrors = {}, onClearFieldError, initialValuesOverride }) => {
   // Debug logging for external errors
   console.log('🔍 AddressInformation received externalErrors:', externalErrors);
   
@@ -60,7 +60,10 @@ const AddressInformation = ({ onSuccess, externalErrors = {}, onClearFieldError 
 
   return (
     <Formik
-      initialValues={initialValues}
+      initialValues={{
+        ...initialValues,
+        ...(initialValuesOverride || {})
+      }}
       validationSchema={validationSchema}
       validateOnBlur={true}
       validateOnChange={false}

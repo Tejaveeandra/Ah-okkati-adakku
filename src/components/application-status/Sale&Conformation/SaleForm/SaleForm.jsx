@@ -352,17 +352,20 @@ const SaleForm = ({ onBack, initialData = {} }) => {
               concessionArray.push({
                 concessionTypeId: allFormData.concessionTypeIds?.admissionFee || 0,
                 concessionAmount: parseFloat(allFormData.admissionFee) || 0.1,
+                concReferedBy: allFormData.givenById || 0,
                 givenById: parseInt(allFormData.givenById) || 0,
                 authorizedById: parseInt(allFormData.authorizedById) || 0,
                 reasonId: parseInt(allFormData.reasonId) || 0,
                 comments: allFormData.description || "string",
-                createdBy: getEmpId()
+                createdBy: getEmpId(),
+              
               });
             }
             if (allFormData.tuitionFee) {
               concessionArray.push({
                 concessionTypeId: allFormData.concessionTypeIds?.tuitionFee || 0,
                 concessionAmount: parseFloat(allFormData.tuitionFee) || 0.1,
+                concReferedBy: allFormData.givenById || 0,
                 givenById: parseInt(allFormData.givenById) || 0,
                 authorizedById: parseInt(allFormData.authorizedById) || 0,
                 reasonId: parseInt(allFormData.reasonId) || 0,
@@ -375,6 +378,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
               concessionArray.push({
                 concessionTypeId: allFormData.concessionTypeIds?.yearConcession1st || 0,
                 concessionAmount: parseFloat(allFormData.yearConcession1st) || 0.1,
+                concReferedBy: allFormData.givenById || 0,
                 givenById: parseInt(allFormData.givenById) || 0,
                 authorizedById: parseInt(allFormData.authorizedById) || 0,
                 reasonId: parseInt(allFormData.reasonId) || 0,
@@ -386,6 +390,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
               concessionArray.push({
                 concessionTypeId: allFormData.concessionTypeIds?.yearConcession2nd || 0,
                 concessionAmount: parseFloat(allFormData.yearConcession2nd) || 0.1,
+                concReferedBy: allFormData.givenById || 0,
                 givenById: parseInt(allFormData.givenById) || 0,
                 authorizedById: parseInt(allFormData.authorizedById) || 0,
                 reasonId: parseInt(allFormData.reasonId) || 0,
@@ -397,6 +402,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
               concessionArray.push({
                 concessionTypeId: allFormData.concessionTypeIds?.yearConcession3rd || 0,
                 concessionAmount: parseFloat(allFormData.yearConcession3rd) || 0.1,
+                concReferedBy: allFormData.givenById || 0,
                 givenById: parseInt(allFormData.givenById) || 0,
                 authorizedById: parseInt(allFormData.authorizedById) || 0,
                 reasonId: parseInt(allFormData.reasonId) || 0,
@@ -409,6 +415,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
               concessionArray.push({
                 concessionTypeId: allFormData.concessionTypeIds?.yearConcession1st || 0,
                 concessionAmount: parseFloat(allFormData.yearConcession1st) || 0.1,
+                concReferedBy: allFormData.givenById || 0,
                 givenById: parseInt(allFormData.givenById) || 0,
                 authorizedById: parseInt(allFormData.authorizedById) || 0,
                 reasonId: parseInt(allFormData.reasonId) || 0,
@@ -420,6 +427,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
               concessionArray.push({
                 concessionTypeId: allFormData.concessionTypeIds?.yearConcession2nd || 0,
                 concessionAmount: parseFloat(allFormData.yearConcession2nd) || 0.1,
+                concReferedBy: allFormData.givenById || 0,
                 givenById: parseInt(allFormData.givenById) || 0,
                 authorizedById: parseInt(allFormData.authorizedById) || 0,
                 reasonId: parseInt(allFormData.reasonId) || 0,
@@ -707,10 +715,11 @@ const SaleForm = ({ onBack, initialData = {} }) => {
 
   const handleEdit = () => {
     console.log('Edit button clicked');
-    // Go back to previous step or edit mode
-    if (currentStep === 2) {
-      setCurrentStep(1);
-    }
+    // Exit confirmation mode and return to sale forms (prefilled via overrides)
+    setShowConform(false);
+    setCurrentStep(1);
+    // Optionally scroll to top of form for better UX
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (_) {}
   };
 
 
@@ -924,6 +933,16 @@ const SaleForm = ({ onBack, initialData = {} }) => {
     console.log('🎉 showSuccess:', showSuccess);
     console.log('🎉 status:', status);
     console.log('🎉 currentStep:', status === "confirm" ? 3 : 2);
+    // Build dynamic values for SuccessPage from collected form data
+    const displayApplicationNo = applicationNo || allFormData.applicationNo || "";
+    const displayStudentName = [allFormData.firstName, allFormData.surname].filter(Boolean).join(' ') || undefined;
+    const numericAmount = allFormData.amount ? Number(allFormData.amount) : undefined;
+    const displayAmount = typeof numericAmount === 'number' && !Number.isNaN(numericAmount)
+      ? `₹${numericAmount.toLocaleString('en-IN')}`
+      : undefined;
+    const displayCampus = allFormData.campusName || allFormData.joinedCampus || allFormData.branch || undefined;
+    const displayZone = allFormData.zoneName || allFormData.zone || allFormData.district || undefined;
+
     return (
       <div className={styles.saleFormContainer}>
         {/* Always render SaleFormContent header even on success page */}
@@ -939,11 +958,11 @@ const SaleForm = ({ onBack, initialData = {} }) => {
         
         <div className={styles.successPageContainer}>
           <SuccessPage
-            applicationNo="APP-2024-001"
-            studentName="John Doe"
-            amount="₹50,000"
-            campus="Main Campus"
-            zone="Zone A"
+            applicationNo={displayApplicationNo}
+            studentName={displayStudentName}
+            amount={displayAmount}
+            campus={displayCampus}
+            zone={displayZone}
             onBack={() => {
               setShowSuccess(false);
               if (onBack) onBack();
@@ -1070,48 +1089,89 @@ const SaleForm = ({ onBack, initialData = {} }) => {
             {/* Debug Box for PersonalInformation */}
         
             <PersonalInformation
-              onSuccess={handlePersonalInfoSuccess}
-              externalErrors={Object.fromEntries(
-                Object.entries(fieldWiseErrors).filter(([key]) =>
-                  ['firstName', 'surname', 'gender', 'aaparNo', 'dateOfBirth', 'aadharCardNo', 'quota', 'admissionType', 'phoneNumber', 'fatherName'].includes(key)
-                )
-              )}
-              onClearFieldError={clearSpecificFieldError}
-            />
+  onSuccess={handlePersonalInfoSuccess}
+  externalErrors={Object.fromEntries(
+    Object.entries(fieldWiseErrors).filter(([key]) =>
+      [
+        'firstName', 'surname', 'gender', 'aaparNo', 'dateOfBirth', 'aadharCardNo', 'quota', 'admissionType', 'phoneNumber', 'fatherName'
+      ].includes(key)
+    )
+  )}
+  onClearFieldError={clearSpecificFieldError}
+  initialValuesOverride={{
+    firstName: studentProfileData?.firstName ?? allFormData.firstName,
+    surname: studentProfileData?.surname ?? studentProfileData?.lastName ?? allFormData.surname,
+    gender: studentProfileData?.genderId?.toString() ?? allFormData.gender,
+    aaparNo: studentProfileData?.apaarNo ?? allFormData.aaparNo,
+    dateOfBirth: studentProfileData?.dob?.substring(0,10) ?? allFormData.dateOfBirth,
+    aadharCardNo: studentProfileData?.aadharCardNo ?? allFormData.aadharCardNo,
+    proReceiptNo: studentProfileData?.proReceiptNo ?? allFormData.proReceiptNo,
+    admissionReferredBy: studentProfileData?.admissionReferredById?.toString() ?? allFormData.admissionReferredBy,
+    quota: studentProfileData?.quotaName ?? allFormData.quota,  
+    employeeId: studentProfileData?.admissionReferredByName ?? allFormData.employeeId,
+    admissionType: studentProfileData?.admissionTypeName ?? allFormData.admissionType,
+    fatherName: studentProfileData?.parentInfo?.fatherName ?? allFormData.fatherName,
+    phoneNumber: studentProfileData?.parentInfo?.phoneNumber?.toString() ?? allFormData.phoneNumber,
+    profilePhoto: studentProfileData?.profilePhoto ?? allFormData.profilePhoto,
+  }}
+/>
           </div>
           
           {/* Orientation Information Form */}
           <div className={styles.saleFormSection}>
             {/* Debug Box for OrientationInformation */}
            
-            <OrientationInformation 
-              onSuccess={handleOrientationInfoSuccess} 
-              externalErrors={Object.fromEntries(
-                Object.entries(fieldWiseErrors).filter(([key]) => 
-                  ['academicYear', 'branch', 'studentType', 'joiningClass', 'orientationName'].includes(key)
-                )
-              )}
-              onClearFieldError={clearSpecificFieldError}
-              onValidationRef={handleOrientationValidationRef}
-              allFormData={allFormData}
-              academicYear={allFormData.academicYear || ""}
-              academicYearId={allFormData.academicYearId || null}
-            />
+            <OrientationInformation
+  onSuccess={handleOrientationInfoSuccess}
+  externalErrors={Object.fromEntries(
+    Object.entries(fieldWiseErrors).filter(([key]) =>
+      ['academicYear', 'branch', 'studentType', 'joiningClass', 'orientationName'].includes(key)
+    )
+  )}
+  onClearFieldError={clearSpecificFieldError}
+  onValidationRef={handleOrientationValidationRef}
+  allFormData={allFormData}
+  academicYear={allFormData.academicYear || ""}
+  academicYearId={allFormData.academicYearId || null}
+  initialValuesOverride={{
+    academicYear: studentProfileData?.academicYear ?? allFormData.academicYear,
+    branch: studentProfileData?.branch ?? allFormData.branch,
+    branchType: studentProfileData?.branchType ?? allFormData.branchType,
+    city: studentProfileData?.city ?? allFormData.city,
+    studentType: studentProfileData?.studentTypeName?.toString() ?? allFormData.studentType,
+    joiningClass: studentProfileData?.joiningClassName?.toString() ?? allFormData.joiningClass,
+    orientationName: studentProfileData?.orientation ?? studentProfileData?.orientationName ?? allFormData.orientationName,
+    admissionType: studentProfileData?.admissionType ?? allFormData.admissionType,
+    proReceiptNo: studentProfileData?.proReceiptNo ?? allFormData.proReceiptNo
+  }}
+/>
           </div>
           
           {/* Address Information Form */}
           <div className={styles.saleFormSection}>
             {/* Debug Box for AddressInformation */}
            
-        <AddressInformation 
-          onSuccess={handleAddressInfoSuccess} 
-          externalErrors={Object.fromEntries(
-            Object.entries(fieldWiseErrors).filter(([key]) => 
-              ['doorNo', 'streetName', 'area', 'pincode', 'mandal', 'addressCity'].includes(key)
-            )
-          )}
-          onClearFieldError={clearSpecificFieldError}
-        />
+            <AddressInformation
+  onSuccess={handleAddressInfoSuccess}
+  externalErrors={Object.fromEntries(
+    Object.entries(fieldWiseErrors).filter(([key]) =>
+      ['doorNo', 'streetName', 'area', 'pincode', 'mandal', 'addressCity'].includes(key)
+    )
+  )}
+  onClearFieldError={clearSpecificFieldError}
+  initialValuesOverride={{
+    doorNo: studentProfileData?.addressDetails?.doorNo ?? allFormData.doorNo,
+    streetName: studentProfileData?.addressDetails?.street ?? allFormData.streetName,
+    landmark: studentProfileData?.addressDetails?.landmark ?? allFormData.landmark,
+    area: studentProfileData?.addressDetails?.area ?? allFormData.area,
+    pincode: studentProfileData?.addressDetails?.pincode != null ? String(studentProfileData?.addressDetails?.pincode) : allFormData.pincode,
+    mandal: studentProfileData?.addressDetails?.mandalId != null ? String(studentProfileData?.addressDetails?.mandalId) : allFormData.mandal,
+    city: studentProfileData?.addressDetails?.cityId != null ? String(studentProfileData?.addressDetails?.cityId) : allFormData.city,
+    district: studentProfileData?.addressDetails?.districtId != null ? String(studentProfileData?.addressDetails?.districtId) : allFormData.district,
+    state: studentProfileData?.addressDetails?.stateId != null ? String(studentProfileData?.addressDetails?.stateId) : allFormData.state,
+    gpin: studentProfileData?.addressDetails?.gpin ?? allFormData.gpin
+  }}
+/>
           </div>
           
           {/* Action Buttons */}

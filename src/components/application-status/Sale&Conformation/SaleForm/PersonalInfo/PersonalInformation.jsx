@@ -12,7 +12,7 @@ import AdditionalFields from "./components/AdditionalFields";
 import ParentInfo from "./components/ParentInfo";
 import styles from "./PersonalInformation.module.css";
 
-const PersonalInformation = ({ onSuccess, externalErrors = {}, onClearFieldError }) => {
+const PersonalInformation = ({ onSuccess, externalErrors = {}, onClearFieldError, initialValuesOverride }) => {
   // Debug logging for external errors
   console.log('🔍 PersonalInformation received externalErrors:', externalErrors);
   console.log('🔍 PersonalInformation externalErrors keys:', Object.keys(externalErrors));
@@ -154,7 +154,10 @@ const PersonalInformation = ({ onSuccess, externalErrors = {}, onClearFieldError
 
   return (
     <Formik
-      initialValues={initialValues}
+      initialValues={{
+        ...initialValues,
+        ...(initialValuesOverride || {})
+      }}
       validationSchema={validationSchema}
       validate={customValidate}
       validateOnBlur={true}

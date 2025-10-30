@@ -44,6 +44,31 @@ const AddressFormField = ({ field, values, handleChange, handleBlur, errors, tou
     severity: 'error'
   });
 
+  useEffect(() => {
+    // Only run on initial mount
+    if (field.name === "pincode") {
+      const val = values.pincode;
+      if (val && val.length === 6) {
+        fetchStateDistrictByPincode(val);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  
+
+// Auto-trigger fetch for mandals/cities on first render if data is present
+useEffect(() => {
+  if (field.name === 'mandal' && values.districtId && values.mandal) {
+    fetchMandalsByDistrict(values.districtId);
+  }
+}, [field.name, values.districtId, values.mandal]);
+
+useEffect(() => {
+  if (field.name === 'city' && values.districtId && values.city) {
+    fetchCitiesByDistrict(values.districtId);
+  }
+}, [field.name, values.districtId, values.city]);
   // Destructure for easier access
   const { stateOptions, districtOptions, mandalOptions, cityOptions, loading, mandalRenderKey, cityRenderKey } = dropdownState;
 

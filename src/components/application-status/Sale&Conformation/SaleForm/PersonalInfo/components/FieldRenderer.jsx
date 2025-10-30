@@ -120,12 +120,12 @@ const FieldRenderer = ({
       // Conditional visibility for Employee ID field (previously Admission Referred By)
       if (field.name === "employeeId") {
         // Check if the selected quota is "Staff children" by finding the quota option
-        const selectedQuotaOption = quotaOptions.find(option => option.value === values.quota);
-        const isStaffChildSelected = selectedQuotaOption?.label === "Staff children";
-        
-        
+        const selectedQuotaOption = quotaOptions.find(
+          option => option.value === values.quota || option.label === values.quota
+        );
+        const isStaffChildSelected = selectedQuotaOption?.label === "Staff children" || values.quota === "Staff children";
         if (!isStaffChildSelected) {
-          return null; // Hide the field if Staff children is not selected
+          return null;
         }
       }
 

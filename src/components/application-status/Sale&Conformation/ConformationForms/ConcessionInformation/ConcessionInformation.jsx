@@ -3,7 +3,7 @@ import Inputbox from '../../../../../widgets/Inputbox/InputBox';
 import Dropdown from '../../../../../widgets/Dropdown/Dropdown';
 import { useAuthorizedBy, useConcessionReasons, useConcessionTypes } from '../hooks/useConfirmationData';
 import styles from './ConcessionInformation.module.css';
-
+ 
 const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors = {}, onClearFieldError }) => {
   // Debug logging for category
   console.log('🏫 ConcessionInformation Category Debug:', {
@@ -11,17 +11,17 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
     categoryType: typeof category,
     categoryUpperCase: category?.toUpperCase()
   });
-  
+ 
   // Fetch authorized by data using custom hook
   const { authorizedBy, loading: authorizedByLoading, error: authorizedByError } = useAuthorizedBy();
-  
+ 
   // Fetch concession reasons data using custom hook
   const { concessionReasons, loading: concessionReasonsLoading, error: concessionReasonsError } = useConcessionReasons();
-  
+ 
   // Fetch concession types data using custom hook
   const { concessionTypes, loading: concessionTypesLoading, error: concessionTypesError } = useConcessionTypes();
-  
-  
+ 
+ 
   const [formData, setFormData] = useState({
     yearConcession1st: '',
     yearConcession2nd: '',
@@ -35,6 +35,8 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
     authorizedBy: '', // Store label for display
     reasonId: '', // Store ID for backend
     reason: '', // Store label for display
+    employeeIdId: '', // Store ID for backend
+    employeeId: '', // Store label for display
     additionalConcession: false,
     concessionAmount: '',
     concessionWrittenById: '', // Store ID for backend
@@ -43,38 +45,38 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
     // Store concession type IDs for backend
     concessionTypeIds: {}
   });
-
+ 
   // Function to get concession type ID for a field name
   const getConcessionTypeId = (fieldName) => {
     // Only log when actually processing a concession field
     const isConcessionField = ['yearConcession1st', 'yearConcession2nd', 'yearConcession3rd', 'admissionFee', 'tuitionFee'].includes(fieldName);
-    
+   
     if (!concessionTypes || concessionTypes.length === 0) {
       if (isConcessionField) {
         console.log('⚠️ No concession types loaded. Available:', concessionTypes);
       }
       return null;
     }
-    
+   
     // Map field names to concession type labels
     const fieldToLabelMap = {
       'yearConcession1st': '1st Year',
-      'yearConcession2nd': '2nd Year', 
+      'yearConcession2nd': '2nd Year',
       'yearConcession3rd': '3rd Year',
       'admissionFee': 'Admission Fee',
       'tuitionFee': 'Tuition Fee'
     };
-    
+   
     const labelToFind = fieldToLabelMap[fieldName];
     if (!labelToFind) {
       return null;
     }
-    
+   
     // Find matching concession type
-    const matchingType = concessionTypes.find(type => 
+    const matchingType = concessionTypes.find(type =>
       type.label?.toLowerCase().includes(labelToFind.toLowerCase())
     );
-    
+   
     if (isConcessionField) {
       console.log(`🔍 Field: ${fieldName}, Looking for: "${labelToFind}"`);
       console.log('🔍 Found:', matchingType);
@@ -82,21 +84,21 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
         console.log('🔍 Available concession types:', concessionTypes.map(t => t.label));
       }
     }
-    
+   
     return matchingType ? matchingType.id : null;
   };
-
+ 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+   
     // Clear external error if it exists
     if (externalErrors[name] && onClearFieldError) {
       onClearFieldError(name);
     }
-    
+   
     // List of concession amount fields that should only accept numbers
     const concessionAmountFields = ['yearConcession1st', 'yearConcession2nd', 'yearConcession3rd', 'admissionFee', 'tuitionFee', 'concessionAmount'];
-    
+   
     // Filter to allow only numbers and decimal point for concession amount fields
     let processedValue = value;
     if (concessionAmountFields.includes(name)) {
@@ -112,16 +114,16 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
         processedValue = '0' + processedValue;
       }
     }
-    
+   
     // Check if this is a concession field
     const concessionTypeId = getConcessionTypeId(name);
-    
+   
     setFormData(prev => {
       const newData = {
         ...prev,
         [name]: processedValue
       };
-      
+     
       // If this is a concession field, also store the concession type ID
       if (concessionTypeId) {
         newData.concessionTypeIds = {
@@ -132,17 +134,17 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
       return newData;
     });
   };
-
+ 
   const handleDropdownChange = (e) => {
     const { name, value } = e.target;
-    
+   
     // Clear external error if it exists
     if (externalErrors[name] && onClearFieldError) {
       onClearFieldError(name);
     }
-    
+   
     // For authorized by fields, store both ID and label
-    if (name === 'givenBy' || name === 'authorizedBy' || name === 'concessionWrittenBy') {
+    if (name === 'givenBy' || name === 'authorizedBy' || name === 'concessionWrittenBy' || name === 'employeeId') {
       const selectedOption = authorizedBy.find(option => option.label === value);
       setFormData(prev => {
         const newData = {
@@ -155,12 +157,22 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
     } else if (name === 'reason') {
       // For reason field, store both ID and label
       const selectedOption = concessionReasons.find(option => option.label === value);
+      // Accept both "Staff Name" and "STAFF" (case-insensitive)
+      const isStaffName = value?.toLowerCase().trim() === 'staff name' || value?.toLowerCase().trim() === 'staff';
+
       setFormData(prev => {
         const newData = {
           ...prev,
           reason: value, // Store label for display
           reasonId: selectedOption ? selectedOption.id : '' // Store ID for backend
         };
+       
+        // Clear Employee ID if reason is not "Staff Name"
+         if (!isStaffName) {
+          newData.employeeId = '';
+          newData.employeeIdId = '';
+        }
+
         return newData;
       });
     } else {
@@ -170,7 +182,7 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
       }));
     }
   };
-
+ 
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
     setFormData(prev => ({
@@ -178,17 +190,17 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
       [name]: checked
     }));
   };
-
+ 
   // Update parent when form data changes (prevent infinite loop)
   useEffect(() => {
     if (onSuccess && Object.keys(formData).length > 0) {
       onSuccess(formData);
     }
   }, [formData]);
-
+ 
   // Function to get concession fields based on category
   const getConcessionFields = () => {
-    
+   
     switch (category?.toUpperCase()) {
       case 'SCHOOL':
         return [
@@ -205,7 +217,7 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
             placeholder: 'Enter tuition fee concession amount'
           }
         ];
-      
+     
       case 'DEGREE':
         return [
           {
@@ -227,7 +239,7 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
             placeholder: 'Enter 3rd year concession amount'
           }
         ];
-      
+     
       case 'COLLEGE':
       default:
         return [
@@ -246,7 +258,9 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
         ];
     }
   };
-
+ 
+  // Check if "Staff Name" is selected in Concession Reason
+ const isStaffNameSelected = ['staff name', 'staff'].includes(formData.reason?.toLowerCase().trim()); 
   // Define field configurations
   const fields = [
     // Dynamic concession fields based on category
@@ -280,22 +294,33 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
     {
       type: 'dropdown',
       name: 'reason',
-      label: 'Reason',
+      label: 'Concession Reason',
       placeholder: concessionReasonsLoading ? 'Loading...' : (concessionReasonsError ? 'Error loading data' : (concessionReasons?.length === 0 ? 'No data available' : 'Select Reason')),
       options: concessionReasonsLoading ? [] : (concessionReasons?.map(reason => reason.label) || []),
       loading: concessionReasonsLoading,
       error: concessionReasonsError,
       data: concessionReasons // Store the full data for ID mapping
-    }
+    },
+    // Conditionally include Employee ID field only when "Staff Name" is selected
+    ...(isStaffNameSelected ? [{
+      type: 'dropdown',
+      name: 'employeeId',
+      label: 'Employee ID',
+      placeholder: authorizedByLoading ? 'Loading...' : (authorizedByError ? 'Error loading data' : (authorizedBy?.length === 0 ? 'No data available' : 'Select employee')),
+      options: authorizedByLoading ? [] : (authorizedBy?.map(auth => auth.label) || []),
+      loading: authorizedByLoading,
+      error: authorizedByError,
+      data: authorizedBy // Store the full data for ID mapping
+    }] : [])
   ];
-
+ 
   return (
     <div className={styles.concession_information_container}>
       <div className={styles.concession_section_label_wrapper}>
         <span className={styles.concession_section_label}>Concession Information</span>
         <div className={styles.concession_section_line}></div>
       </div>
-      
+     
       <div className={styles.concession_form_grid}>
         {fields.map((field, index) => (
           <div key={field.name} className={styles.concession_field_wrapper}>
@@ -311,9 +336,9 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                   type="text"
                 />
                 {externalErrors[field.name] && (
-                  <div style={{ 
-                    color: '#dc2626', 
-                    fontSize: '12px', 
+                  <div style={{
+                    color: '#dc2626',
+                    fontSize: '12px',
                     marginTop: '4px',
                     display: 'flex',
                     alignItems: 'center',
@@ -338,15 +363,15 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                   placeholder={field.placeholder}
                 />
                 {externalErrors[field.name] && (
-                  <div style={{ 
-                    color: '#dc2626', 
-                    fontSize: '12px', 
+                  <div style={{
+                    color: '#dc2626',
+                    fontSize: '12px',
                     marginTop: '4px',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '4px'
                   }}>
-                  
+                 
                     <span>{externalErrors[field.name]}</span>
                   </div>
                 )}
@@ -355,7 +380,7 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
           </div>
         ))}
       </div>
-
+ 
       {/* Additional Concession Section */}
       <div className={styles.additional_concession_section}>
         <div className={styles.concession_checkbox_wrapper}>
@@ -372,7 +397,7 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
           </label>
           <div className={styles.concession_line}></div>
         </div>
-
+ 
         {formData.additionalConcession && (
           <div className={styles.additional_concession_fields}>
             <div className={styles.concession_field_wrapper}>
@@ -386,9 +411,9 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                 type="text"
               />
               {externalErrors.concessionAmount && (
-                <div style={{ 
-                  color: '#dc2626', 
-                  fontSize: '12px', 
+                <div style={{
+                  color: '#dc2626',
+                  fontSize: '12px',
                   marginTop: '4px',
                   display: 'flex',
                   alignItems: 'center',
@@ -399,7 +424,7 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                 </div>
               )}
             </div>
-            
+           
             <div className={styles.concession_field_wrapper}>
               <Dropdown
                 dropdownname="Concession Written By"
@@ -413,20 +438,20 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                 placeholder={authorizedByLoading ? 'Loading...' : (authorizedByError ? 'Error loading data' : (authorizedBy?.length === 0 ? 'No data available' : 'Select name'))}
               />
               {externalErrors.concessionWrittenBy && (
-                <div style={{ 
-                  color: '#dc2626', 
-                  fontSize: '12px', 
+                <div style={{
+                  color: '#dc2626',
+                  fontSize: '12px',
                   marginTop: '4px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px'
-                }}> 
+                }}>
                  
                   <span>{externalErrors.concessionWrittenBy}</span>
                 </div>
               )}
             </div>
-            
+           
             <div className={styles.concession_field_wrapper}>
               <Inputbox
                 label="Reason"
@@ -438,15 +463,15 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                 type="text"
               />
               {externalErrors.additionalReason && (
-                <div style={{ 
-                  color: '#dc2626', 
-                  fontSize: '12px', 
+                <div style={{
+                  color: '#dc2626',
+                  fontSize: '12px',
                   marginTop: '4px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px'
                 }}>
-                  
+                 
                   <span>{externalErrors.additionalReason}</span>
                 </div>
               )}
@@ -457,5 +482,5 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
     </div>
   );
 };
-
+ 
 export default ConcessionInformation;

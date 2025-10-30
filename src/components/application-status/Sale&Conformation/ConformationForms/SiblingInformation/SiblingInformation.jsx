@@ -46,8 +46,8 @@ const SiblingInformation = forwardRef(({ onSuccess }, ref) => {
     {
       type: 'input',
       name: 'schoolName',
-      label: 'School Name',
-      placeholder: 'Enter School Name'
+      label: 'Organization Name',
+      placeholder: 'Enter Organization Name'
     }
   ];
   const [showSiblings, setShowSiblings] = useState(false);

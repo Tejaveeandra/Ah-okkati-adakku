@@ -253,6 +253,13 @@ useEffect(() => {
           label: item.name // Use the actual name from API response
         }));
         setDropdownState(prev => ({ ...prev, mandalOptions: transformedOptions }));
+        // If we already have a mandalId from initial values, map it to label for visible value
+        if (values.mandalId != null && values.mandalId !== '' && (!values.mandal || values.mandal === String(values.mandalId))) {
+          const match = transformedOptions.find(opt => String(opt.value) === String(values.mandalId));
+          if (match) {
+            setFieldValue('mandal', match.label);
+          }
+        }
       } else {
         setDropdownState(prev => ({ ...prev, mandalOptions: [] }));
         setFieldValue('mandal', '');
@@ -314,6 +321,13 @@ useEffect(() => {
           label: item.name // Use the actual name from API response
         }));
         setDropdownState(prev => ({ ...prev, cityOptions: transformedOptions }));
+        // If we already have a cityId from initial values, map it to label for visible value
+        if (values.cityId != null && values.cityId !== '' && (!values.city || values.city === String(values.cityId))) {
+          const match = transformedOptions.find(opt => String(opt.value) === String(values.cityId));
+          if (match) {
+            setFieldValue('city', match.label);
+          }
+        }
       } else {
         setDropdownState(prev => ({ ...prev, cityOptions: [] }));
         setFieldValue('city', '');

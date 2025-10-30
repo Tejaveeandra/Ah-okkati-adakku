@@ -11,7 +11,7 @@ import FormError from "./components/FormError";
 import Snackbar from "../../../../../widgets/Snackbar/Snackbar";
 import styles from "./FamilyInformation.module.css";
 
-const FamilyInformation = ({ formData = {}, onSuccess, externalErrors = {}, onClearFieldError }) => {
+const FamilyInformation = ({ formData = {}, onSuccess, externalErrors = {}, onClearFieldError, profileData = null }) => {
   
   // Fetch sectors and occupations data using custom hooks
   const { sectors, loading: sectorsLoading, error: sectorsError } = useSectors();
@@ -77,8 +77,8 @@ const FamilyInformation = ({ formData = {}, onSuccess, externalErrors = {}, onCl
   
   // Initial form values
   const initialValues = {
-    fatherName: formData.fatherName || "",
-    fatherPhoneNumber: formData.fatherPhoneNumber || "",
+    fatherName: formData.fatherName || profileData?.parentInfo?.fatherName || "",
+    fatherPhoneNumber: formData.fatherPhoneNumber || (profileData?.parentInfo?.phoneNumber != null ? String(profileData.parentInfo.phoneNumber) : ""),
     fatherEmail: formData.fatherEmail || "",
     fatherSector: formData.fatherSector || "",
     fatherSectorId: formData.fatherSectorId || "", // Store sector ID for backend

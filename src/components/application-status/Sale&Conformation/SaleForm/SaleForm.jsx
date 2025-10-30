@@ -1022,6 +1022,7 @@ const SaleForm = ({ onBack, initialData = {} }) => {
                   onSuccess={handleFamilyInfoSuccess}
                   externalErrors={fieldWiseErrors}
                   onClearFieldError={clearSpecificFieldError}
+                  profileData={studentProfileData}
                 />
               </div>
               
@@ -1170,7 +1171,12 @@ const SaleForm = ({ onBack, initialData = {} }) => {
     city: studentProfileData?.addressDetails?.cityId != null ? String(studentProfileData?.addressDetails?.cityId) : allFormData.city,
     district: studentProfileData?.addressDetails?.districtId != null ? String(studentProfileData?.addressDetails?.districtId) : allFormData.district,
     state: studentProfileData?.addressDetails?.stateId != null ? String(studentProfileData?.addressDetails?.stateId) : allFormData.state,
-    gpin: studentProfileData?.addressDetails?.gpin ?? allFormData.gpin
+    gpin: studentProfileData?.addressDetails?.gpin ?? allFormData.gpin,
+    // Provide ID fields so the form can reconcile IDs to labels post-fetch
+    mandalId: studentProfileData?.addressDetails?.mandalId != null ? studentProfileData?.addressDetails?.mandalId : allFormData.mandalId,
+    cityId: studentProfileData?.addressDetails?.cityId != null ? studentProfileData?.addressDetails?.cityId : allFormData.cityId,
+    districtId: studentProfileData?.addressDetails?.districtId != null ? studentProfileData?.addressDetails?.districtId : allFormData.districtId,
+    stateId: studentProfileData?.addressDetails?.stateId != null ? studentProfileData?.addressDetails?.stateId : allFormData.stateId
   }}
 />
           </div>

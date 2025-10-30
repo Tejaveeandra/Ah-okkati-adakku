@@ -6,11 +6,14 @@ import styles from './ConcessionInformation.module.css';
  
 const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors = {}, onClearFieldError, orientationFee = 0 }) => {
   // Debug logging for category
-  console.log('🏫 ConcessionInformation Category Debug:', {
+  console.log('ConcessionInformation Category Debug:', {
     receivedCategory: category,
     categoryType: typeof category,
     categoryUpperCase: category?.toUpperCase()
   });
+
+  // UPPERCASE CATEGORY (used in multiple places)
+  const upperCategory = category?.toUpperCase();
  
   // Fetch authorized by data using custom hook
   const { authorizedBy, loading: authorizedByLoading, error: authorizedByError } = useAuthorizedBy();
@@ -46,19 +49,20 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
     concessionTypeIds: {}
   });
  
+  // Local validation error state
+  const [concessionErrors, setConcessionErrors] = useState({});
+
   // Function to get concession type ID for a field name
   const getConcessionTypeId = (fieldName) => {
-    // Only log when actually processing a concession field
     const isConcessionField = ['yearConcession1st', 'yearConcession2nd', 'yearConcession3rd', 'admissionFee', 'tuitionFee'].includes(fieldName);
    
     if (!concessionTypes || concessionTypes.length === 0) {
       if (isConcessionField) {
-        console.log('⚠️ No concession types loaded. Available:', concessionTypes);
+        console.log('No concession types loaded. Available:', concessionTypes);
       }
       return null;
     }
    
-    // Map field names to concession type labels
     const fieldToLabelMap = {
       'yearConcession1st': '1st Year',
       'yearConcession2nd': '2nd Year',
@@ -72,16 +76,15 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
       return null;
     }
    
-    // Find matching concession type
     const matchingType = concessionTypes.find(type =>
       type.label?.toLowerCase().includes(labelToFind.toLowerCase())
     );
    
     if (isConcessionField) {
-      console.log(`🔍 Field: ${fieldName}, Looking for: "${labelToFind}"`);
-      console.log('🔍 Found:', matchingType);
+      console.log(`Field: ${fieldName}, Looking for: "${labelToFind}"`);
+      console.log('Found:', matchingType);
       if (!matchingType) {
-        console.log('🔍 Available concession types:', concessionTypes.map(t => t.label));
+        console.log('Available concession types:', concessionTypes.map(t => t.label));
       }
     }
    
@@ -96,26 +99,20 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
       onClearFieldError(name);
     }
    
-    // List of concession amount fields that should only accept numbers
     const concessionAmountFields = ['yearConcession1st', 'yearConcession2nd', 'yearConcession3rd', 'admissionFee', 'tuitionFee', 'concessionAmount'];
    
-    // Filter to allow only numbers and decimal point for concession amount fields
     let processedValue = value;
     if (concessionAmountFields.includes(name)) {
-      // Remove all characters except numbers and decimal point
       processedValue = value.replace(/[^0-9.]/g, '');
-      // Ensure only one decimal point
       const parts = processedValue.split('.');
       if (parts.length > 2) {
         processedValue = parts[0] + '.' + parts.slice(1).join('');
       }
-      // Prevent leading decimal point (allow "0.5" but not ".5")
       if (processedValue.startsWith('.')) {
         processedValue = '0' + processedValue;
       }
     }
    
-    // Check if this is a concession field
     const concessionTypeId = getConcessionTypeId(name);
    
     setFormData(prev => {
@@ -124,7 +121,6 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
         [name]: processedValue
       };
      
-      // If this is a concession field, also store the concession type ID
       if (concessionTypeId) {
         newData.concessionTypeIds = {
           ...prev.concessionTypeIds,
@@ -138,37 +134,32 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
   const handleDropdownChange = (e) => {
     const { name, value } = e.target;
    
-    // Clear external error if it exists
     if (externalErrors[name] && onClearFieldError) {
       onClearFieldError(name);
     }
    
-    // For authorized by fields, store both ID and label
     if (name === 'givenBy' || name === 'authorizedBy' || name === 'concessionWrittenBy' || name === 'employeeId') {
       const selectedOption = authorizedBy.find(option => option.label === value);
       setFormData(prev => {
         const newData = {
           ...prev,
-          [name]: value, // Store label for display
-          [name + 'Id']: selectedOption ? selectedOption.id : '' // Store ID for backend
+          [name]: value,
+          [name + 'Id']: selectedOption ? selectedOption.id : ''
         };
         return newData;
       });
     } else if (name === 'reason') {
-      // For reason field, store both ID and label
       const selectedOption = concessionReasons.find(option => option.label === value);
-      // Accept both "Staff Name" and "STAFF" (case-insensitive)
       const isStaffName = value?.toLowerCase().trim() === 'staff name' || value?.toLowerCase().trim() === 'staff';
 
       setFormData(prev => {
         const newData = {
           ...prev,
-          reason: value, // Store label for display
-          reasonId: selectedOption ? selectedOption.id : '' // Store ID for backend
+          reason: value,
+          reasonId: selectedOption ? selectedOption.id : ''
         };
        
-        // Clear Employee ID if reason is not "Staff Name"
-         if (!isStaffName) {
+        if (!isStaffName) {
           newData.employeeId = '';
           newData.employeeIdId = '';
         }
@@ -191,49 +182,63 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
     }));
   };
  
-  // 1. Accept orientationFee as a prop
-  // 2. Add local validation error state
-  const [concessionError, setConcessionError] = useState("");
-
-  // 3. Add validation effect whenever formData changes
+  // VALIDATION — SCHOOL UNCHANGED, COLLEGE NO SUM ERROR
   useEffect(() => {
-    let totalConcession = 0;
-    if (category.toUpperCase() === "SCHOOL") {
-      totalConcession =
-        parseFloat(formData.admissionFee || 0) +
-        parseFloat(formData.tuitionFee || 0);
-    } else if (category.toUpperCase() === "COLLEGE") {
-      totalConcession =
-        parseFloat(formData.yearConcession1st || 0) +
-        parseFloat(formData.yearConcession2nd || 0);
-    } else if (category.toUpperCase() === "DEGREE") {
-      totalConcession =
-        parseFloat(formData.yearConcession1st || 0) +
-        parseFloat(formData.yearConcession2nd || 0) +
-        parseFloat(formData.yearConcession3rd || 0);
-    }
-    if (orientationFee && Number(totalConcession) > Number(orientationFee)) {
-      setConcessionError(
-        `Total concession (${totalConcession}) cannot exceed Orientation Fee (${orientationFee})`
-      );
-    } else {
-      setConcessionError("");
-    }
-  }, [formData, orientationFee, category]);
+    const errors = {};
+    const add = parseFloat(formData.concessionAmount || 0);
 
-  // 4. Prevent propagate to parent if error
+    // SCHOOL LOGIC — UNCHANGED
+    if (upperCategory === "SCHOOL") {
+      const adm = parseFloat(formData.admissionFee || 0);
+      const tui = parseFloat(formData.tuitionFee || 0);
+      const sumYears = adm + tui;
+      if (sumYears > orientationFee) {
+        errors.sumError = `Total concession (${sumYears}) cannot exceed Orientation Fee (${orientationFee})`;
+      }
+    } 
+    // COLLEGE / DEGREE: EACH YEAR SEPARATE — NO SUM
+    else if (upperCategory === "COLLEGE" || upperCategory === "DEGREE") {
+      const y1 = parseFloat(formData.yearConcession1st || 0);
+      const y2 = parseFloat(formData.yearConcession2nd || 0);
+      const y3 = parseFloat(formData.yearConcession3rd || 0);
+
+      // 1st Year SEPARATE
+      if (y1 > orientationFee) {
+        errors.yearConcession1st = `1st Year concession cannot exceed Orientation Fee (${orientationFee})`;
+      }
+      // 2nd Year SEPARATE
+      if (y2 > orientationFee) {
+        errors.yearConcession2nd = `2nd Year concession cannot exceed Orientation Fee (${orientationFee})`;
+      }
+      // 3rd Year SEPARATE
+      if (upperCategory === "DEGREE" && y3 > orientationFee) {
+        errors.yearConcession3rd = `3rd Year concession cannot exceed Orientation Fee (${orientationFee})`;
+      }
+
+      // NO SUM CHECK — 1st + 2nd CAN = 15000 > 10256
+
+      // Additional: remaining = orientationFee - (y1 + y2 + y3)
+      const totalYears = y1 + y2 + (upperCategory === "DEGREE" ? y3 : 0);
+      const remaining = Math.max(0, orientationFee - totalYears);
+
+      if (formData.additionalConcession && add > remaining) {
+        errors.concessionAmount = `Concession amount cannot exceed remaining (${remaining})`;
+      }
+    }
+
+    setConcessionErrors(errors);
+  }, [formData, orientationFee, upperCategory]);
+
+  // Propagate to parent only if no errors
   useEffect(() => {
-    if (onSuccess && !concessionError && Object.keys(formData).length > 0) {
+    if (onSuccess && Object.keys(concessionErrors).length === 0 && Object.keys(formData).length > 0) {
       onSuccess(formData);
     }
-    // Else: Do not call onSuccess if error
-    // eslint-disable-next-line
-  }, [formData, concessionError]);
+  }, [formData, concessionErrors, onSuccess]);
  
   // Function to get concession fields based on category
   const getConcessionFields = () => {
-   
-    switch (category?.toUpperCase()) {
+    switch (upperCategory) {
       case 'SCHOOL':
         return [
           {
@@ -291,11 +296,9 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
     }
   };
  
-  // Check if "Staff Name" is selected in Concession Reason
- const isStaffNameSelected = ['staff name', 'staff'].includes(formData.reason?.toLowerCase().trim()); 
-  // Define field configurations
+  const isStaffNameSelected = ['staff name', 'staff'].includes(formData.reason?.toLowerCase().trim()); 
+ 
   const fields = [
-    // Dynamic concession fields based on category
     ...getConcessionFields(),
     {
       type: 'dropdown',
@@ -305,7 +308,7 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
       options: authorizedByLoading ? [] : (authorizedBy?.map(auth => auth.label) || []),
       loading: authorizedByLoading,
       error: authorizedByError,
-      data: authorizedBy // Store the full data for ID mapping
+      data: authorizedBy
     },
     {
       type: 'input',
@@ -321,7 +324,7 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
       options: authorizedByLoading ? [] : (authorizedBy?.map(auth => auth.label) || []),
       loading: authorizedByLoading,
       error: authorizedByError,
-      data: authorizedBy // Store the full data for ID mapping
+      data: authorizedBy
     },
     {
       type: 'dropdown',
@@ -331,9 +334,8 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
       options: concessionReasonsLoading ? [] : (concessionReasons?.map(reason => reason.label) || []),
       loading: concessionReasonsLoading,
       error: concessionReasonsError,
-      data: concessionReasons // Store the full data for ID mapping
+      data: concessionReasons
     },
-    // Conditionally include Employee ID field only when "Staff Name" is selected
     ...(isStaffNameSelected ? [{
       type: 'dropdown',
       name: 'employeeId',
@@ -342,7 +344,7 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
       options: authorizedByLoading ? [] : (authorizedBy?.map(auth => auth.label) || []),
       loading: authorizedByLoading,
       error: authorizedByError,
-      data: authorizedBy // Store the full data for ID mapping
+      data: authorizedBy
     }] : [])
   ];
 
@@ -371,6 +373,18 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                   onChange={handleInputChange}
                   type="text"
                 />
+                {concessionErrors[field.name] && (
+                  <div style={{
+                    color: '#dc2626',
+                    fontSize: '12px',
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    <span>{concessionErrors[field.name]}</span>
+                  </div>
+                )}
                 {externalErrors[field.name] && (
                   <div style={{
                     color: '#dc2626',
@@ -380,7 +394,6 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                     alignItems: 'center',
                     gap: '4px'
                   }}>
-                   
                     <span>{externalErrors[field.name]}</span>
                   </div>
                 )}
@@ -398,6 +411,18 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                   loading={field.loading}
                   placeholder={field.placeholder}
                 />
+                {concessionErrors[field.name] && (
+                  <div style={{
+                    color: '#dc2626',
+                    fontSize: '12px',
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    <span>{concessionErrors[field.name]}</span>
+                  </div>
+                )}
                 {externalErrors[field.name] && (
                   <div style={{
                     color: '#dc2626',
@@ -407,7 +432,6 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                     alignItems: 'center',
                     gap: '4px'
                   }}>
-                 
                     <span>{externalErrors[field.name]}</span>
                   </div>
                 )}
@@ -415,20 +439,23 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
             )}
           </div>
         ))}
-        {/* Show local validation error above the description field */}
-        {concessionError && (
+
+        {/* SHOW SUM ERROR ONLY IN SCHOOL */}
+        {upperCategory === 'SCHOOL' && concessionErrors.sumError && (
           <div
             style={{
               gridColumn: '1 / -1',
               color: '#dc2626',
               fontSize: '14px',
               marginBottom: '8px',
-              padding: '4px 0'
+              padding: '4px 0',
+              fontWeight: '500'
             }}
           >
-            {concessionError}
+            {concessionErrors.sumError}
           </div>
         )}
+
         {afterDescriptionFields.map((field, index) => (
           <div key={field.name} className={styles.concession_field_wrapper}>
             {field.type === 'input' ? (
@@ -442,6 +469,18 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                   onChange={handleInputChange}
                   type="text"
                 />
+                {concessionErrors[field.name] && (
+                  <div style={{
+                    color: '#dc2626',
+                    fontSize: '12px',
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    <span>{concessionErrors[field.name]}</span>
+                  </div>
+                )}
                 {externalErrors[field.name] && (
                   <div style={{
                     color: '#dc2626',
@@ -451,7 +490,6 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                     alignItems: 'center',
                     gap: '4px'
                   }}>
-                   
                     <span>{externalErrors[field.name]}</span>
                   </div>
                 )}
@@ -469,6 +507,18 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                   loading={field.loading}
                   placeholder={field.placeholder}
                 />
+                {concessionErrors[field.name] && (
+                  <div style={{
+                    color: '#dc2626',
+                    fontSize: '12px',
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    <span>{concessionErrors[field.name]}</span>
+                  </div>
+                )}
                 {externalErrors[field.name] && (
                   <div style={{
                     color: '#dc2626',
@@ -478,7 +528,6 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                     alignItems: 'center',
                     gap: '4px'
                   }}>
-                 
                     <span>{externalErrors[field.name]}</span>
                   </div>
                 )}
@@ -488,8 +537,8 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
         ))}
       </div>
  
-      {/* Additional Concession Section - Hide for SCHOOL category */}
-      {category.toUpperCase() !== 'SCHOOL' && (
+      {/* Additional Concession Section - Only for non-SCHOOL categories */}
+      {upperCategory !== 'SCHOOL' && (
         <div className={styles.additional_concession_section}>
           <div className={styles.concession_checkbox_wrapper}>
             <label className={styles.concession_checkbox_label}>
@@ -518,6 +567,18 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                   onChange={handleInputChange}
                   type="text"
                 />
+                {concessionErrors.concessionAmount && (
+                  <div style={{
+                    color: '#dc2626',
+                    fontSize: '12px',
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    <span>{concessionErrors.concessionAmount}</span>
+                  </div>
+                )}
                 {externalErrors.concessionAmount && (
                   <div style={{
                     color: '#dc2626',
@@ -527,7 +588,6 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                     alignItems: 'center',
                     gap: '4px'
                   }}>
-                   
                     <span>{externalErrors.concessionAmount}</span>
                   </div>
                 )}
@@ -554,7 +614,6 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                     alignItems: 'center',
                     gap: '4px'
                   }}>
-                   
                     <span>{externalErrors.concessionWrittenBy}</span>
                   </div>
                 )}
@@ -579,7 +638,6 @@ const ConcessionInformation = ({ category = 'COLLEGE', onSuccess, externalErrors
                     alignItems: 'center',
                     gap: '4px'
                   }}>
-                   
                     <span>{externalErrors.additionalReason}</span>
                   </div>
                 )}
